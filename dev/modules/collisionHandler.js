@@ -1,5 +1,6 @@
 import { hitboxList, Hitbox, Type, Category } from "./hitbox.js";
 import { MyMath as Utils } from "./misc/mymath.js";
+import { Vec2 } from "./geom.js";
 
 /**
  * Call every frame...
@@ -10,7 +11,7 @@ function updateCollisionHandler() {
     var pairs = queryForCollisionPairs();
 
     //resolve collisions by modifying other game logic. ~~resolve
-    var c, h1, h2, e1, e2, enemy, player, fproj, eproj;
+    var c, h1, h2, e1, e2, enemy, playerHitbox, fproj, eproj, v2test, stairHitbox;
     for (c = 0; c < pairs.length; c++) {
         h1 = pairs[c].h1;
         h2 = pairs[c].h2;
@@ -19,11 +20,42 @@ function updateCollisionHandler() {
                 console.log("wo");
 
                 break;
+            case Category.STAIR | Category.PLAYER:
+                console.log("Stairwo.");
+                playerHitbox = h1.category === Category.PLAYER ? h1 : h2;
+                stairHitbox = h1 === playerHitbox ? h2 : h1;
+                //? check if stair hitbox contains the player's center point.?
+                //debugger;
+                console.log(playerHitbox.refX + "wo"+playerHitbox.refY);
+                if (false || rectContainsPoint(160, 160, 16, 32, playerHitbox.refX, playerHitbox.refY)) { //TODO HARDCODED COORDINATES.
+                    console.log("Stairwo.WOWWOWO");
+                    v2test = temp_convertVecWo(playerHitbox.getVelocityX(), playerHitbox.getVelocityY());
+                    playerHitbox.setVelocity(v2test.x, v2test.y);
+                }
+                //playerHitbox.setVelocity(2,3);
+                break;
         }
     }
-
-
 }
+
+var rectContainsPoint = function (x, y, w, h, px, py) {
+    return x <= px && px <= x + w &&
+        y <= py && py <= y + h;
+}
+
+function temp_convertVecWo(x, y) {
+    //This works well with orthogonal inputs, but doesnt preserve magnitude for diagonal inputs...
+    //for right facing stairs, for now...
+    //RETURNS THE SAME VECTOR! JUST MODIFIED!
+    //must be Vec2
+    //linear trans. matrix? [sqrt2/2 , 0 | sqrt2/2, 1]
+    let vec2 = new Vec2(
+        Math.SQRT2 / 2 * x,
+        Math.SQRT2 / 2 * x + y
+    );
+    return vec2;
+}
+
 function queryForCollisionPairs() {
 
     var i, j;
@@ -72,7 +104,7 @@ function SAT(hitboxA, hitboxB) {
         p1, p2, rad, vec;
     //sidesA, sidesB;
 
-    
+
     //if (input.keyJustPressed(input.Key.K))
     //console.log(axesList);
 

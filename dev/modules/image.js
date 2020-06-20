@@ -95,7 +95,8 @@ var imagesidk = {
 
 
     CLOUD_BKGD: newBackgroundImage("clouds_test_bkgd.png"),
-    FIRE: newAnimatedImage(s, 2, 4, 8, 10)
+    FIRE: newAnimatedImage(s, 2, 4, 8, 10),
+    WALKING_TEST: newAnimatedImage(s, 2, 4, 0, 13, 1, 2)
 };
 
 export { imagesidk as IMAGE, MyImage };

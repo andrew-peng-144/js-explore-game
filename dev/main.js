@@ -32,12 +32,15 @@ import * as AssetLoader from "./modules/assetloader.js";
 
         //input flags (unneeded, already event-handled.)
 
-        //handle input for player...
+        //update physics: update positions first, then do all collisions. (or other order? idk?)
+        stepWorld();
+
+        //handle input for player... (Since this is done after stepworld, it adds 1 frame (17ms) of input delay)
         Player.update();
 
-        //update physics: update positions first, then do all collisions.
-        stepWorld();
+
         updateCollisionHandler();
+        //but for hitboxes that CHANGE the vel/accel of colliding objects, those should be updated before stepWorld?
 
         Camera.update();
     }
@@ -58,13 +61,13 @@ import * as AssetLoader from "./modules/assetloader.js";
         // this.projectileHandler.renderAll();
 
         //temp
-        tempEntityList.forEach(e=>e.draw(Context.main));
+        tempEntityList.forEach(e => e.draw(Context.main));
 
         //(fallen) items
         //ingame.drawStillImageToWorld(IMAGE.UGLY_BLADE, 50, 50 + timing.commonCounters.itemHover.getCurrentNumber());
 
         //hitboxes (Debug)
-        DrawHitboxes.drawHitboxes(Context.main);
+        //DrawHitboxes.drawHitboxes(Context.main);
 
 
     }
@@ -102,7 +105,7 @@ import * as AssetLoader from "./modules/assetloader.js";
         return pub;
     }());
 
-    
+
     // /**
     //  * Draws image at the given frame onto world at given coords.
     //  * An alternative to doing gameobject.draw

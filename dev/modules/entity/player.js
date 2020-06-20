@@ -6,7 +6,7 @@ var Player = {};
 
 Player.draw = function (ctx) { Player.gameEntity.draw(ctx); }
 Player.update = function () {
-    let speed = 2.69420 //2*Math.sqrt(2);
+    let speed = 1.69420 //2*Math.sqrt(2);
     let rad = 0;
     let up = Input.keyPressed(KeyCode.W),
         left = Input.keyPressed(KeyCode.A),
@@ -31,7 +31,7 @@ Player.update = function () {
     }
 }
 Player.init = function () {
-    Player.gameEntity = GameEntity.newActorEntity(50, 50, Image.IMAGE.NPC1);
+    Player.gameEntity = GameEntity.newActorEntity(50, 50, Image.IMAGE.NPC1, 0, 16, 16, 16);
 }
 
 export { Player };

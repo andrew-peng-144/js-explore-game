@@ -1,6 +1,12 @@
 //A shape that represents a hitbox...
 //
 
+
+//UGH HOW TO ORGANIZE THIS COLLISION STUFF???????????????
+//
+
+
+
 import { Point } from "./geom.js";
 /**
  * Call to step the physics simulation
@@ -33,22 +39,24 @@ function stepWorld() {
  * If it is not static then it will have velocity and acceleration.
  *  * 
  * @param {GameEntity} gameEntity reference to the parent entity. Not all hitboxes have this, put null.
- * @param {Point[]} vertices an array [[x1,y1],[x2,y2,]...] of vertices representing the shape, relative to (0,0)
+ * @param {Point[]} vertices an array [[x1,y1],[x2,y2,]...] of vertices representing the shape, relative to (0,0) (so absolute numbers.)
  * @param {HType} category whose hitbox is this
  * @param {HProperty} type
  * @param {Number} zid if nonzero, collision will only be handled with hitboxes of the same zid. if zero, handle collision with ALL others
- * @param {Number} initX the initial x value of the "center" of this hitbox
+ * @param {Number} refX the x value for a single point of refernce for hitbox. yes it uses 2 more numbers of RAM per hitbox. but it makes some computations faster and simpler.
  * */
-function Hitbox(gameEntity, vertices, type, category, zid, initX, initY) {
+function Hitbox(gameEntity, vertices, type, category, zid, refX, refY) {
     this.gameEntity = gameEntity || null;
-    this.refX = initX || 0; //The X value of a "reference" position, usually the center, which isn't used in collision but used for easy distance calculation.
-    this.refY = initY || 0;
+    this.refX = refX || 0; //The X value of a "reference" position, usually the center, which isn't used in collision but used for easy distance calculation.
+    this.refY = refY || 0;
 
-    this.vertices = vertices.map(v => {
-        v.x = v.x + this.refX;
-        v.y = v.y + this.refY;
-        return v;
-    }); //add each vertex to initx & inity.
+    this.vertices = vertices; //keep it simple
+
+    // this.vertices = vertices.map(v => {
+    //     v.x = v.x + this.refX;
+    //     v.y = v.y + this.refY;
+    //     return v;
+    // }); //add each vertex to initx & inity.
 
     this.category = category || Category.DEFAULT;
     this.type = type || Type.ZONE;
@@ -138,7 +146,7 @@ var Category = {
     FRIENDLY_PROJECTILE: 8,
     ENEMY_PROJECTILE: 16,
     TELEPORTER: 32,
-    b6: 64,
+    STAIR: 64,
     b7: 128,
     b8: 256,
     b9: 512,
@@ -157,7 +165,9 @@ var Category = {
 
 
 /**
+ * ANY SHAPE, HIT"BOX" MAY BE A MISNOMER LMAO
  * @param {Point[]} vertices Convex. Clockwise.
+ * @param initX THE CENTER X!! NOT THE TOP LEFT
  */
 function newHitbox(gameEntity, vertices, hitboxType, hitboxCategory, zid, initX, initY) {
     var h = new Hitbox(gameEntity, vertices, hitboxType, hitboxCategory, zid, initX, initY);
@@ -168,74 +178,112 @@ function newHitbox(gameEntity, vertices, hitboxType, hitboxCategory, zid, initX,
 /**
  * Makes a rectangle hitbox with properties of a static block.
  * First vertex is always top-left.
- * @param {Number} x in world coordinates.
+ * @param {Number} x in world coordinates. TOP LEFT!
  * @param {*} y 
  * @param {*} width 
  * @param {*} height 
  */
 function newRectBlockHitbox(x, y, width, height) {
+    // return newHitbox(null, [
+    //     new Point(-width / 2, -height / 2),
+    //     new Point(width / 2, -height / 2),
+    //     new Point(width / 2, height / 2),
+    //     new Point(-width / 2, height / 2)],
+    //     Type.BLOCK,
+    //     Category.BLOCK,
+    //     0,
+    //     x, y);
     return newHitbox(null, [
-        new Point(-width / 2, -height / 2),
-        new Point(width / 2, -height / 2),
-        new Point(width / 2, height / 2),
-        new Point(-width / 2, height / 2)],
+        new Point(x, y),
+        new Point(x + width, y),
+        new Point(x + width, y + height),
+        new Point(x, y + height)],
         Type.BLOCK,
         Category.BLOCK,
         0,
-        x, y);
-
+        x + width / 2, y + height / 2);
 }
 
 /**
+ *  * @param {Number} x in world coordinates. TOP LEFT!
  * Makes a rectangle hitbox with properties of a moving actor.
  * First vertex is always top-left.
  */
 function newRectActorHitbox(x, y, width, height, gameEntity, category) {
+    // return newHitbox(gameEntity, [
+    //     new Point(-width / 2, -height / 2),
+    //     new Point(width / 2, -height / 2),
+    //     new Point(width / 2, height / 2),
+    //     new Point(-width / 2, height / 2)],
+    //     Type.ACTOR,
+    //     category,
+    //     0,
+    //     x, y);
     return newHitbox(gameEntity, [
-        new Point(-width / 2, -height / 2),
-        new Point(width / 2, -height / 2),
-        new Point(width / 2, height / 2),
-        new Point(-width / 2, height / 2)],
+        new Point(x, y),
+        new Point(x + width, y),
+        new Point(x + width, y + height),
+        new Point(x, y + height)],
         Type.ACTOR,
         category,
         0,
-        x, y);
+        x + width / 2, y + height / 2);
 }
 
 /** * @param slopeDir 1: topleft, 2: topright, 3: bottomright, 4: bottomleft
  * The shape is a rectangle but cut in half diagonally, leaving only 3 vertices
 */
-function newSlopeBlockHitbox(x, y, width, height, slopeDir) {
-    var v = [];
+function newSlopeBlockHitbox(x, y, w, h, slopeDir) {
+    var v;
     switch (slopeDir) {
-        case 1: v = [
-            new Point(-width / 2, -height / 2),
-            new Point(width / 2, -height / 2),
-            new Point(-width / 2, height / 2)
-        ]; //topleft (refers to where the right angle is)
-            break;
-        case 2: v = [
-            new Point(-width / 2, -height / 2),
-            new Point(width / 2, -height / 2),
-            new Point(width / 2, height / 2)
-        ]; //topright
-            break;
-        case 3: v = [
-            new Point(width / 2, -height / 2),
-            new Point(width / 2, height / 2),
-            new Point(-width / 2, height / 2)
-        ];//bottomright
-            break;
-        case 4: v = [
-            new Point(-width / 2, -height / 2),
-            new Point(width / 2, height / 2),
-            new Point(-width / 2, height / 2)
-        ];//bottomleft
-            break;
+        // case 1: v = [
+        //     new Point(-width / 2, -height / 2),
+        //     new Point(width / 2, -height / 2),
+        //     new Point(-width / 2, height / 2)
+        // ]; //topleft (refers to where the right angle is)
+        //     break;
+        // case 2: v = [
+        //     new Point(-width / 2, -height / 2),
+        //     new Point(width / 2, -height / 2),
+        //     new Point(width / 2, height / 2)
+        // ]; //topright
+        //     break;
+        // case 3: v = [
+        //     new Point(width / 2, -height / 2),
+        //     new Point(width / 2, height / 2),
+        //     new Point(-width / 2, height / 2)
+        // ];//bottomright
+        //     break;
+        // case 4: v = [
+        //     new Point(-width / 2, -height / 2),
+        //     new Point(width / 2, height / 2),
+        //     new Point(-width / 2, height / 2)
+        // ];//bottomleft
+        case 1: v = [new Point(x, y), new Point(x + w, y), new Point(x, y + h)]; break; //topleft
+        case 2: v = [new Point(x, y), new Point(x + w, y), new Point(x + w, y + h)]; break; //topright
+        case 3: v = [new Point(x + w, y), new Point(x + w, y + h), new Point(x, y + h)]; break; //bottomright
+        case 4: v = [new Point(x, y), new Point(x + w, y + h), new Point(x, y + h)]; break; //bottomleft
         default: throw "bad slope block type";
     }
 
-    return newHitbox(null, v, Type.BLOCK, Category.BLOCK, 0, x, y);
+    return newHitbox(null, v, Type.BLOCK, Category.BLOCK, 0, x + w / 2, y + h / 2);
+}
+
+/**
+ * Wo.
+ * @param stairDir 1: left, 2: right, 3: idk, not implemented rip.
+ */
+function newStairZone_Right(x, y, width, height, stairDir) {
+    var v;
+    return newHitbox(null, [
+        new Point(x, y),
+        new Point(x + width, y),
+        new Point(x + width, y + height),
+        new Point(x, y + height)],
+        Type.ZONE,
+        Category.STAIR,
+        0,
+        x + width / 2, y + height / 2);
 }
 
 // /**
@@ -282,4 +330,4 @@ function newCircle() {
 // }
 
 
-export { hitboxList, stepWorld, Hitbox, Type, Category, newRectBlockHitbox, newRectActorHitbox, newSlopeBlockHitbox }
+export { hitboxList, stepWorld, Hitbox, Type, Category, newRectBlockHitbox, newRectActorHitbox, newSlopeBlockHitbox, newStairZone_Right }

@@ -1,3 +1,5 @@
+//UNUSED
+
 var lr = {};
 
 var old_tileMapCanvas = document.createElement('canvas'),

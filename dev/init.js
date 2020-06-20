@@ -95,12 +95,15 @@ function init(callback) {
     Hitbox.newSlopeBlockHitbox(300,0,50,50,3);
     Hitbox.newSlopeBlockHitbox(300,300,20,20,4);
 
+    //stair test.
+    Hitbox.newStairZone_Right(160,160,16,32);
+
     var xd = Hitbox.newRectActorHitbox(0,0,20,30,null,Hitbox.Category.ENEMY);
     xd.setAcceleration(0.01,0);
 
     for (let i = 0; i < 500; i += 20) {
         tempEntityList.push(
-            GameEntity.newGenericEntity(200 + i, 20 + i, IMAGE.BOB),
+            GameEntity.newGenericEntity(200 + i, 20 + i, IMAGE.WALKING_TEST),
             GameEntity.newGenericEntity( i, 300 + i, IMAGE.BLAZEN),
             GameEntity.newGenericEntity(100+ i, 300 + i, IMAGE.FIRE)
         );

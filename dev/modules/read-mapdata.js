@@ -5,9 +5,9 @@
 //use FileReader
 //actually use AJAX. read from the server.
 
-var levelDataFile = "testing3.json";
+var levelDataFile = "testingdiag.json";
 
-//THIS IS SYNCHRONOUS. THAT MEANS EVERYTHING PAUSES UNTIL DIS IS LOADED.
+//THIS IS SYNCHRONOUS. THAT MEANS EVERYTHING PAUSES UNTIL DIS IS LOADED. meaning the ENTIRE DOCUMENT! if the map's too big then it'll freeze! ree!
 var ReadMapData = {
     mapArr: null,
     mapTWidth: null,
@@ -26,7 +26,7 @@ function loadDoc(url) {
             ReadMapData.mapTWidth = obj.width;
         }
     };
-    xhttp.open("GET", url, false); //synchronous. perhaps make async later?
+    xhttp.open("GET", url, false); //synchronous. //TODO  make async later with loading?
     xhttp.send();
 }
 

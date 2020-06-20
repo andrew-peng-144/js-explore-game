@@ -125,6 +125,7 @@ function newActorEntity(x, y, image, offsetX = 0, offsetY = 0, hitboxWidth, hitb
     return g;
 }
 
+
 //TODO animator...
 // (function Animator() {
 //     var pub = {};
