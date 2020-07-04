@@ -1,6 +1,6 @@
 //top level module
 
-import { TILE_SIZE, V_WIDTH, V_HEIGHT, STEP } from "./modules/globals.js";
+import { TILE_SIZE, V_WIDTH, V_HEIGHT, STEP, ZOOM } from "./modules/globals.js";
 import { init, Canvas, Context, tempEntityList } from "./init.js";
 import { Input, KeyCode } from "./modules/input.js";
 
@@ -42,7 +42,7 @@ import * as AssetLoader from "./modules/assetloader.js";
         updateCollisionHandler();
         //but for hitboxes that CHANGE the vel/accel of colliding objects, those should be updated before stepWorld?
 
-        Camera.update();
+        Camera.update(Player, V_WIDTH/ZOOM, V_HEIGHT/ZOOM);
     }
 
     function RENDER(R) {
@@ -67,7 +67,7 @@ import * as AssetLoader from "./modules/assetloader.js";
         //ingame.drawStillImageToWorld(IMAGE.UGLY_BLADE, 50, 50 + timing.commonCounters.itemHover.getCurrentNumber());
 
         //hitboxes (Debug)
-        //DrawHitboxes.drawHitboxes(Context.main);
+        DrawHitboxes.drawHitboxes(Context.main);
 
 
     }

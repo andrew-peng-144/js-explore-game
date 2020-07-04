@@ -91,8 +91,17 @@ function queryForCollisionPairs() {
 
     return pairs;
 }
+
+function twoRectCollision (hitboxA, hitboxB) {
+
+}
+
+function twoCircleCollision (hitboxA, hitboxB) {
+    
+}
+
 /**
- * SEPARATING AXIS THEOREM -- CONVEX POLYGONS ONLY, NO ARCS (yet)
+ * SEPARATING AXIS THEOREM -- detect collision between any two CONVEX POLYGONS, NO ARCS (yet)
  * @param {Hitbox} hitboxA 
  * @param {Hitbox} hitboxB 
  */

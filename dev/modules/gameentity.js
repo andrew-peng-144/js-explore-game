@@ -43,26 +43,26 @@ GameEntity.prototype.getSpriteY = function () {
     return this.hitbox.getFirstPoint().y - this.offsetY;
 }
 GameEntity.prototype.getSpriteWidth = function () {
-    return this.image.swt * TILE_SIZE * ZOOM;
+    return this.image.swt * TILE_SIZE;
 }
 GameEntity.prototype.getSpriteHeight = function () {
-    return this.image.sht * TILE_SIZE * ZOOM;
+    return this.image.sht * TILE_SIZE;
 }
 GameEntity.prototype.getSpriteMaxX = function () { return this.getSpriteX() + this.getSpriteWidth() }
 GameEntity.prototype.getSpriteMaxY = function () { return this.getSpriteY() + this.getSpriteHeight() }
 GameEntity.prototype.isAnimated = function () { return this.image.n > 1; }
 
-GameEntity.prototype.draw = function (ctx) {
-    var sx = 0;
-    // if (this.isAnimated())
-    //     sx = this.loopingCounter.getCurrentNumber() * TILE_SIZE;
-    // else
-    //     sx = this.image.sxt * TILE_SIZE;
+// GameEntity.prototype.draw = function (ctx) {
+//     var sx = 0;
+//     // if (this.isAnimated())
+//     //     sx = this.loopingCounter.getCurrentNumber() * TILE_SIZE;
+//     // else
+//     //     sx = this.image.sxt * TILE_SIZE;
 
-    this.image.draw(ctx, this.getSpriteX() - Camera.getExactX(), this.getSpriteY() - Camera.getExactY(), ZOOM);
+//     this.image.draw(ctx, this.getSpriteX() - Camera.getExactX(), this.getSpriteY() - Camera.getExactY(), ZOOM);
 
 
-}
+// }
 
 
 /**

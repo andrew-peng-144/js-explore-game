@@ -91,12 +91,15 @@ var imagesidk = {
     LINKIN: newStillImage(s, 0, 6),
     BLAZEN: newAnimatedImage(s, 0, 5, 7, 8),
     GOHST: newStillImage(s, 1, 6),
-    BOB: newAnimatedImage(s, 6, 4, 0, 10, 1, 2), //new ATImg(s, 6, 9, 0, 10, 1, 2),
+    BOB: newAnimatedImage(s, 10, 4, 0, 10, 1, 2), //new ATImg(s, 6, 9, 0, 10, 1, 2),
 
 
     CLOUD_BKGD: newBackgroundImage("clouds_test_bkgd.png"),
     FIRE: newAnimatedImage(s, 2, 4, 8, 10),
-    WALKING_TEST: newAnimatedImage(s, 2, 4, 0, 13, 1, 2)
+    WALKING_TEST: newAnimatedImage(s, 2, 4, 0, 13, 1, 2),
+    WALKING_LEFT_TEST: newAnimatedImage(s, 6, 4, 0, 13, 1, 2),
+    WALKING_RIGHT_TEST: newAnimatedImage(s, 2, 4, 2, 13, 1, 2),
+    WALKING_DOWN_TEST: newAnimatedImage(s, 6, 4, 2, 13, 1, 2)
 };
 
 export { imagesidk as IMAGE, MyImage };

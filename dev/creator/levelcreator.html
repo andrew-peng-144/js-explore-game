@@ -16,10 +16,16 @@
 
         canvas {
             border: 1px solid black;
-            margin: 20px;
+            margin: 0px;
         }
 
+        /* #mainCanvas { cant do width and height in css it will just scale ugly
+            width: calc(95vw - 20px);
+            height: 70vh;
+        } */
         #palette {
+            position:fixed;
+            right: 5vw;
             vertical-align: top;
         }
 
@@ -50,10 +56,11 @@
         <li><label for='stampID'>CURRENT ID STAMPING:</label><input id='stampID' type='number' value=1></li>
         <li><label for='stampWidth'>Stamp Width (= inc - dec):</label><input id='stampWidth' type='number' min=1
                 value=1></li>
-        <li><label for='stampHeight'> Stamp Height ( ] inc [ dec):</label><input id='stampHeight' type='number'
-                min=1 value=1></li>
+        <li><label for='stampHeight'> Stamp Height ( ] inc [ dec):</label><input id='stampHeight' type='number' min=1
+                value=1></li>
         <!-- <li><label for='setwise-toggle'>[TODO] Setwise</label><input id='setwise-toggle' type='checkbox'></li> -->
-        <li><input type="button" value="Reset size to 0" onclick="$('#stampWidth').val(1); $('#stampHeight').val(1);"></li>
+        <li><input type="button" value="Reset size to 0" onclick="$('#stampWidth').val(1); $('#stampHeight').val(1);">
+        </li>
     </ul>
     <ul>
         <!-- <li><button id='create'>DOWNLOAD MAP</button></li> -->
@@ -88,14 +95,16 @@
         <li><label for='showTiles'>[TODO] SHOW TILES</label><input id='showTiles'
             type='checkbox' checked>
         </li>
-
+        <li>
+            <label for='sliderZoom'>ZOOM AMOUNT:</label>
+            <input type='range' min='1' max='20' value='1' class='slider' id='sliderZoom'>
+        </li>
     </ul>
-    
-    <canvas id='mainCanvas' width='800' height='700'>Please use the latest version of
-                Chrome or Firefox.</canvas>
+    <canvas id='mainCanvas'>Please use the latest version of
+        Chrome or Firefox.</canvas>
     <canvas id='palette'></canvas>
-    <textarea readonly id='output-box' style='vertical-align:top'>asdf</textarea>
-    <span style='vertical-align:top'>hi</span>
+    <!-- <textarea readonly id='output-box' style='vertical-align:top'>asdf</textarea>
+    <span style='vertical-align:top'>hi</span> -->
     <div id='mouse-pos-display'>0,0</div>
 
 </body>

@@ -101,13 +101,13 @@ function init(callback) {
     var xd = Hitbox.newRectActorHitbox(0,0,20,30,null,Hitbox.Category.ENEMY);
     xd.setAcceleration(0.01,0);
 
-    for (let i = 0; i < 500; i += 20) {
-        tempEntityList.push(
-            GameEntity.newGenericEntity(200 + i, 20 + i, IMAGE.WALKING_TEST),
-            GameEntity.newGenericEntity( i, 300 + i, IMAGE.BLAZEN),
-            GameEntity.newGenericEntity(100+ i, 300 + i, IMAGE.FIRE)
-        );
-    }
+    // for (let i = 0; i < 500; i += 20) {
+    //     tempEntityList.push(
+    //         GameEntity.newGenericEntity(200 + i, 20 + i, IMAGE.WALKING_TEST),
+    //         GameEntity.newGenericEntity( i, 300 + i, IMAGE.BLAZEN),
+    //         GameEntity.newGenericEntity(100+ i, 300 + i, IMAGE.FIRE)
+    //     );
+    // }
 
     //load assets
     loadAssets(callback);

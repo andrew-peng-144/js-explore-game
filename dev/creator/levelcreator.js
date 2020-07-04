@@ -5,17 +5,24 @@
 
     General:
         Don't do the clipboard method, instead, do Blob downloading.
-        Zooming capabilities.
-        Make draw canvas much larger and the palette canvas directly on top of it in the corner.
-        right click to erase
-        Resize canvas.
+      o  Zooming capabilities.
+      +  Make draw canvas much larger and the palette canvas directly on top of it in the corner.
+      +  right click to erase
+      +  Resize canvas while working.
         Resize entire grid. (needa copy old one in a certain way)
         show grid.
         IMPORT json into world.
+        To not lose data upon refresh (save into localstorage?)
+        Click and drag to pan the set, instead of wasd.
 
     Draw tile mode:
         hold shift then = - to inc/dec by 5 at a time.
-        hold shift then WASD to move a lot more at a time.
+      ?  hold shift then WASD to move a lot more at a time.
+        Smoother tile drawing in general -- calc old and new positoin and fill in all tiles in a line between them?
+        Draw a line of tiles?
+        Draw a shape of tiles?
+        Scatter tiles in random positions in specified area?
+
 
     Draw object/"prop" mode: (e.g. a tree u can walk behind and in front of.)
         show the "object" palette instead of the tile palette
@@ -34,7 +41,7 @@
         create slope. sep. by type.
     
     one-way graph mode:
-        create one-way graph. type (for override pathfind, for npc normal pathing)
+        create one-way graph. type (for override path, for npc normal pathing)
 
 
 */
@@ -58,7 +65,9 @@ $(document).ready(function () {
         gridHeight: 200,
         getTilesetTWidth: function () { return this.assets['tileset.png'].width / TILE_SIZE },
         getTilesetTHeight: function () { return this.assets['tileset.png'].height / TILE_SIZE },
-        mouseIsDownMain: false
+        leftMouseIsDownMain: false,
+        rightMouseIsDownMain: false,
+        zoom: 1
     }
     function init() {
         //LOAD ALL ASSETS first
@@ -86,9 +95,19 @@ $(document).ready(function () {
         //init canvases.
         GLOBAL.mainCanvas = $("#mainCanvas")[0];
         GLOBAL.mcContext = GLOBAL.mainCanvas.getContext('2d');
-        GLOBAL.mcContext.imageSmoothingEnabled = false;
+
         GLOBAL.paletteCanvas = $("#palette")[0];
         GLOBAL.pcContext = GLOBAL.paletteCanvas.getContext('2d');
+
+        //init bounds for canvases, and attach them to resize event
+        var resizeMainCanvas = function () {
+            GLOBAL.mainCanvas.width = window.innerWidth * 0.965;
+            GLOBAL.mainCanvas.height = window.innerHeight * 0.75;
+            GLOBAL.mcContext.imageSmoothingEnabled = false; //changing width/height after makes this true somehow
+            redrawMain();
+        }
+        resizeMainCanvas();
+        window.addEventListener('resize', resizeMainCanvas);
 
         //Disable right click
         $("canvas").contextmenu(function () { return false; });
@@ -100,6 +119,7 @@ $(document).ready(function () {
 
         //KEY EVENTS
         $(document).on('keydown', function (e) {
+            e.preventDefault();
             switch (e.which) {
                 // case 87: scrollMap(87); break; //W
                 // case 65: camera.left = true; break; //A
@@ -114,10 +134,10 @@ $(document).ready(function () {
                 case 221: $('#stampHeight').get(0).stepUp(); break;
                 case 219: $('#stampHeight').get(0).stepDown(); break;
 
-                case 37: setStampIDAndRedrawPalette(getCurrentID() - 1); break; //left arrow
-                case 38: setStampIDAndRedrawPalette(getCurrentID() - GLOBAL.getTilesetTWidth()); break; //up
-                case 39: setStampIDAndRedrawPalette(getCurrentID() + 1); break;//right
-                case 40: setStampIDAndRedrawPalette(getCurrentID() + GLOBAL.getTilesetTWidth()); break; //down
+                case 37: setStampIDAndRedrawPalette(getIDfromLabel() - 1); break; //left arrow
+                case 38: setStampIDAndRedrawPalette(getIDfromLabel() - GLOBAL.getTilesetTWidth()); break; //up
+                case 39: setStampIDAndRedrawPalette(getIDfromLabel() + 1); break;//right
+                case 40: setStampIDAndRedrawPalette(getIDfromLabel() + GLOBAL.getTilesetTWidth()); break; //down
 
                 // case 81: isQCurrentlyDown = true; break;
                 // case 69: isECurrentlyDown = true; break;
@@ -143,26 +163,34 @@ $(document).ready(function () {
         }, 40);
 
         //MOUSE EVENTS
+
+        $(GLOBAL.mainCanvas).contextmenu(function (e) { e.preventDefault; });
+
         $(GLOBAL.mainCanvas).mousemove(function (e) {
             let mouseX = e.clientX - this.getBoundingClientRect().left;
             let mouseY = e.clientY - this.getBoundingClientRect().top;
             $('#mouse-pos-display').text(Math.floor((mouseX + Camera.getX()) / TILE_SIZE) + "," + Math.floor((mouseY + Camera.getY()) / TILE_SIZE));
 
-            //keep drawing and updateing when mouse is moving AND mouse is down.
-            if (GLOBAL.mouseIsDownMain) {
+            //keep drawing and updateing when mouse is moving AND mouse is down (either left or right).
+            if (GLOBAL.leftMouseIsDownMain || GLOBAL.rightMouseIsDownMain) {
                 placeAndDrawTilesOnClick(mouseX, mouseY,
                     $("#stampWidth").val(),
-                    $("#stampHeight").val());
+                    $("#stampHeight").val()
+                );
             }
+            
+            //E.WHICH DOESNT WORK FOR MOUSEMOVE!!!!!!!!!!!
+
         });
 
         $(GLOBAL.mainCanvas).mousedown(function (e) {
-            GLOBAL.mouseIsDownMain = true;
-            // switch (e.which) {
-            //     case 1: isLeftMouseCurrentlyDown = true;
-            //         break;
-            //     case 3: isRightMouseCurrentlyDown = true; break;
-            // }
+
+            switch (e.which) {
+                case 1: GLOBAL.leftMouseIsDownMain = true;
+                    break;
+                case 3: GLOBAL.rightMouseIsDownMain = true;
+                    break;
+            }
             //console.log(GLOBAL);
             placeAndDrawTilesOnClick(
                 e.clientX - this.getBoundingClientRect().left,
@@ -172,12 +200,12 @@ $(document).ready(function () {
             );
         });
         $(GLOBAL.mainCanvas).mouseup(function (e) {
-            GLOBAL.mouseIsDownMain = false;
-            // switch (e.which) {
-            //     case 1: isLeftMouseCurrentlyDown = false;
-            //         break;
-            //     case 3: isRightMouseCurrentlyDown = false; break;
-            // }
+            switch (e.which) {
+                case 1: GLOBAL.leftMouseIsDownMain = false;
+                    break;
+                case 3: GLOBAL.rightMouseIsDownMain = false;
+                    break;
+            }
 
         });
 
@@ -188,6 +216,32 @@ $(document).ready(function () {
             //set stampid value
             setStampIDAndRedrawPalette(id);
             redrawPalette();
+        });
+
+        //SLIDER
+        let sliderZoomEl = document.querySelector("#sliderZoom");
+        sliderZoomEl.addEventListener("input", function (e) {
+            debugger;
+            GLOBAL.zoom = Number.parseInt(this.value);
+            redrawMain();
+        });
+
+        //WHEEL SCROLLING.
+        GLOBAL.mainCanvas.addEventListener("wheel", function (event) {
+            event.preventDefault();
+            if (event.deltaY < 0) {
+                // Zoom in
+                //document.querySelector("#sliderZoom").value += 1;
+                sliderZoomEl.value = Number.parseInt(sliderZoomEl.value) + 1;
+                //TODO move camera position after, to account for the new view...
+            }
+            else {
+                // Zoom out
+                //document.querySelector("#sliderZoom").value -= 1;
+                sliderZoomEl.value = Number.parseInt(sliderZoomEl.value) - 1;
+
+            }
+            sliderZoomEl.dispatchEvent(new Event('input'));
         });
 
         GLOBAL.paletteCanvas.width = GLOBAL.getTilesetTWidth() * TILE_SIZE;
@@ -266,8 +320,8 @@ $(document).ready(function () {
      * @param {Number} y Y TILE
      * @return true if params are valid and buffer was edited, false otherwise 
      */
-    function editDrawBuffer(x, y, id) {
-        if (x >= 0 && y >= 0 && x < GLOBAL.gridWidth && y < GLOBAL.gridHeight && id) {
+    function editDrawBuffer(x, y, id = 0) {
+        if (x >= 0 && y >= 0 && x < GLOBAL.gridWidth && y < GLOBAL.gridHeight) {
             GLOBAL.drawBuffer[Math.floor(x) + Math.floor(y) * GLOBAL.gridWidth] = id; //String.fromCharCode(id);
             return true;
         } else { return false; }
@@ -309,33 +363,50 @@ $(document).ready(function () {
         try {
             validateWorldCoords(x, y);
             validateID(id);
-        } catch (err) { console.log(err); return; }
+        } catch (err) {
+            if (id == 0) {
+                clearRectWorld(x, y, TILE_SIZE, TILE_SIZE);
+            } else {
+            console.log(err); 
+            }
+            return;
+        }
         GLOBAL.mcContext.drawImage(GLOBAL.assets['tileset.png'],
             (id - 1) % GLOBAL.getTilesetTWidth() * TILE_SIZE,
             Math.floor((id - 1) / GLOBAL.getTilesetTWidth()) * TILE_SIZE,
             TILE_SIZE,
             TILE_SIZE,
-            (x - Camera.getX()),
-            (y - Camera.getY()),
-            TILE_SIZE,
-            TILE_SIZE);
+            (x - Camera.getX()) * GLOBAL.zoom,
+            (y - Camera.getY()) * GLOBAL.zoom,
+            TILE_SIZE * GLOBAL.zoom,
+            TILE_SIZE * GLOBAL.zoom);
+    }
+
+    /**
+     * Clears a rectangle of the main canvas of the specified bounds, GIVEN IN WORLD COORDS.
+     */
+    function clearRectWorld(x, y, w, h) {
+        GLOBAL.mcContext.clearRect(
+            (x - Camera.getX()) * GLOBAL.zoom,
+            (y - Camera.getY()) * GLOBAL.zoom,
+            w * GLOBAL.zoom,
+            h * GLOBAL.zoom
+        )
     }
     /**
      * Update the drawBuffer array AND draw the new tile AT WORLD COORDINATES clipped to grid.
      * 
      * @param {Number} wx world x
      * @param {Number} wy  "    y
+     * @param {Number} id the id to draw.
      */
-    function placeAndDrawNewTile(wx, wy) {
+    function placeAndDrawNewTile(wx, wy, id = 0) {
         // var wx = x + Camera.getX();
         // var wy = y + Camera.getY();
-        let id;
-
-
-        // debugger;\
-
+        //let id;
+        debugger;
         //if (wx > 0 && wx < GLOBAL.gridWidth * TILE_SIZE && wy > 0 && wy < GLOBAL.gridHeight * TILE_SIZE) {
-        id = getCurrentID();
+        //id = getIDfromLabel();
         if (editDrawBuffer(Math.floor(wx / TILE_SIZE), Math.floor(wy / TILE_SIZE), id)) {
             drawTileToWorld(Math.floor(wx / TILE_SIZE) * TILE_SIZE, Math.floor(wy / TILE_SIZE) * TILE_SIZE, id);
 
@@ -360,13 +431,19 @@ $(document).ready(function () {
     }
 
     /**
-     * Update the drawBuffer array with the new tiles of the SAME ID, and draw the new tiles
-     * @param {Number} x The x coordinate of the mouse on the canvas.
+     * Update the drawBuffer array with the new tiles of the SAME ID, and draw the new tiles.
+     * //TODO: This function accounts for zoom when detecting where to place new tile based on mouse click position.
+     * @param {Number} x The x coordinate of the mouse on the canvas, in pixels, not accounting for zoom
      */
     function placeAndDrawTilesOnClick(x, y, width, height) {
+        debugger;
+        let id = GLOBAL.rightMouseIsDownMain ? 0 : getIDfromLabel();
         for (let w = 0; w < width; w++) {
             for (let h = 0; h < height; h++) {
-                placeAndDrawNewTile(x + Camera.getX() + TILE_SIZE * w, y + Camera.getY() + TILE_SIZE * h);
+                placeAndDrawNewTile(
+                    x / GLOBAL.zoom + Camera.getX() + TILE_SIZE * w,
+                    y / GLOBAL.zoom + Camera.getY() + TILE_SIZE * h,
+                    id);
             }
         }
     }
@@ -375,7 +452,7 @@ $(document).ready(function () {
      * reads the stampID label
      * so this isn't super performance friendly?
      */
-    function getCurrentID() {
+    function getIDfromLabel() {
         return parseInt($('#stampID').val()) || 1;
     }
 
@@ -388,7 +465,7 @@ $(document).ready(function () {
         GLOBAL.pcContext.clearRect(0, 0, GLOBAL.paletteCanvas.width, GLOBAL.paletteCanvas.height);
         GLOBAL.pcContext.drawImage(GLOBAL.assets["tileset.png"], 0, 0);
 
-        let id = getCurrentID();
+        let id = getIDfromLabel();
         let wo = IDtoCoords(id);
         GLOBAL.pcContext.beginPath();
         GLOBAL.pcContext.rect(wo.tx * TILE_SIZE, wo.ty * TILE_SIZE, TILE_SIZE, TILE_SIZE);

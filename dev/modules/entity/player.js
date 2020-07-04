@@ -4,9 +4,27 @@ import { Input, KeyCode } from "../input.js";
 
 var Player = {};
 
-Player.draw = function (ctx) { Player.gameEntity.draw(ctx); }
+var MovementState = {
+    STILL: 0,
+    RUNNING: 1,
+    CLIMBING_LADDER: 2,
+    UNCONTROLLABLE: 3,
+    IDKLMFAO: 4
+}
+Player.currentState = 0;
+
+Player.draw = function (ctx) {
+    switch(MovementState) {
+        case MovementState.STILL: break;
+    }
+    Player.gameEntity.draw(ctx);
+
+}
+function drawBasedOnDirection() {
+    
+}
 Player.update = function () {
-    let speed = 1.69420 //2*Math.sqrt(2);
+    let speed = 2.69420//1*Math.sqrt(2);
     let rad = 0;
     let up = Input.keyPressed(KeyCode.W),
         left = Input.keyPressed(KeyCode.A),
@@ -26,8 +44,10 @@ Player.update = function () {
     else { rad = null; } //didnt move
     if (rad) {
         Player.gameEntity.hitbox.setVelocityRT(speed, rad);
+        this.currentState = MovementState.RUNNING;
     } else {
         Player.gameEntity.hitbox.setVelocity(0,0);
+        this.currentState = MovementState.STILL;
     }
 }
 Player.init = function () {
