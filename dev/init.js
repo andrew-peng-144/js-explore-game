@@ -3,11 +3,12 @@ import { InputInit } from "./modules/input.js";
 import * as Constants from "./modules/globals.js";
 import { TileMapRenderer } from "./modules/tilemap-renderer.js";
 import { ReadMapData } from "./modules/read-mapdata.js";
-import * as Hitbox from "./modules/hitbox.js";
+import { Hitbox } from "./modules/hitbox.js";
 import { Player } from "./modules/entity/player.js";
 import { loadAssets } from "./modules/assetloader.js";
-import * as GameEntity from "./modules/gameentity.js";
-import { IMAGE } from "./modules/image.js";
+// import * as GameEntity from "./modules/gameentity.js";
+import { IMAGE } from "./modules/imagedef.js";
+import { Block } from "./modules/entity/block.js"
 /**
  * @property {CanvasRenderingContext2D} gui w w 
  */
@@ -87,29 +88,10 @@ function init(callback) {
 
     //create entities.
     Player.init();
-    // for (let i = 0; i < 10; i++) {
-    //     Hitbox.newRectBlockHitbox(5 + i * 50, 5 + i * 50, 10, 20);
-    // }
-    Hitbox.newSlopeBlockHitbox(0,0,20,50,1);
-    Hitbox.newSlopeBlockHitbox(0,300,40,50,2);
-    Hitbox.newSlopeBlockHitbox(300,0,50,50,3);
-    Hitbox.newSlopeBlockHitbox(300,300,20,20,4);
 
-    //stair test.
-    Hitbox.newStairZone_Right(160,160,16,32);
+    //create sum BLOCKS lul
+    new Block(100,120,50,70);
 
-    var xd = Hitbox.newRectActorHitbox(0,0,20,30,null,Hitbox.Category.ENEMY);
-    xd.setAcceleration(0.01,0);
-
-    // for (let i = 0; i < 500; i += 20) {
-    //     tempEntityList.push(
-    //         GameEntity.newGenericEntity(200 + i, 20 + i, IMAGE.WALKING_TEST),
-    //         GameEntity.newGenericEntity( i, 300 + i, IMAGE.BLAZEN),
-    //         GameEntity.newGenericEntity(100+ i, 300 + i, IMAGE.FIRE)
-    //     );
-    // }
-
-    //load assets
     loadAssets(callback);
 
 }

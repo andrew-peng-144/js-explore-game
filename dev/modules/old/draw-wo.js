@@ -1,7 +1,7 @@
 //UNUSED.
 
-import { IMAGE, MyImage } from "./image.js";
-import { TILE_SIZE } from "./globals.js";
+// import { IMAGE, MyImage } from "./image.js";
+// import { TILE_SIZE } from "./globals.js";
 import { Camera } from "./camera.js";
 const ZOOM = 2;
 /**
