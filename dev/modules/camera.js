@@ -33,9 +33,9 @@ c.update = function (player, width, height) {
     // if (Input.keyPressed(KeyCode.RIGHT)) {
     //     exactX+=speed;
     // }
-    debugger;
-    exactX = player.gameEntity.getSpriteX() - width / 2 + player.gameEntity.getSpriteWidth() / 2;
-    exactY = player.gameEntity.getSpriteY() - height / 2 + player.gameEntity.getSpriteHeight() / 2;
+    
+    exactX = player.gameEntity.x + player.gameEntity.renderComponent.offsetX - width / 2 + player.gameEntity.renderComponent.getWidth() / 2;
+    exactY = player.gameEntity.y + player.gameEntity.renderComponent.offsetY - height / 2 + player.gameEntity.renderComponent.getHeight() / 2;
     // if (camera.x < 0) camera.x = 0;
     // if (camera.x > map.width * TILEWIDTH - canvas.width) camera.x = map.width * TILEWIDTH - canvas.width;
     // if (camera.y < 0) camera.y = 0;

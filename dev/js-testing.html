@@ -15,6 +15,20 @@
 <body>
   <!-- <script src='state-machine.js'></script> -->
   <script>
+
+      function Wow() {
+        this.a = "wow";
+      }
+      Wow.prototype.ke = function() {
+        this.b = "new";
+      }
+      debugger;
+      let a = new Wow();
+      let b = new Wow();
+      a.ke();
+      let c = new Wow();
+
+
       //TEST:
       //apply(), bind(), call(), then(),
 

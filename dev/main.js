@@ -1,14 +1,14 @@
 //top level module
 
 import { TILE_SIZE, V_WIDTH, V_HEIGHT, STEP, ZOOM } from "./modules/globals.js";
-import { init, Canvas, Context, tempEntityList } from "./init.js";
+import { init, Canvas, Context } from "./init.js";
 import { Input, KeyCode } from "./modules/input.js";
 
 import { IMAGE, MyImage } from "./modules/image.js";
 
 import { PubSub } from "./modules/pubsub.js";
 
-import { Hitbox, stepWorld } from "./modules/hitbox.js"
+import * as Hitbox from "./modules/hitbox.js"
 import { updateCollisionHandler } from "./modules/collisionHandler.js";
 
 import { drawImageToScreen } from "./modules/draw.js";
@@ -23,6 +23,8 @@ import * as DrawHitboxes from "./modules/draw-hitbox.js";
 import { Player } from "./modules/entity/player.js";
 
 import * as AssetLoader from "./modules/assetloader.js";
+import * as RenderComponent from "./modules/render-component.js";
+import * as KinematicComponent from "./modules/kinematic-component.js";
 (function () {
     function UPDATE(T) {
 
@@ -33,16 +35,16 @@ import * as AssetLoader from "./modules/assetloader.js";
         //input flags (unneeded, already event-handled.)
 
         //update physics: update positions first, then do all collisions. (or other order? idk?)
-        stepWorld();
+        //stepWorld();
 
         //handle input for player... (Since this is done after stepworld, it adds 1 frame (17ms) of input delay)
         Player.update();
 
-
+        KinematicComponent.kinematicComponents.forEach(e => e.update());
         updateCollisionHandler();
         //but for hitboxes that CHANGE the vel/accel of colliding objects, those should be updated before stepWorld?
 
-        Camera.update(Player, V_WIDTH/ZOOM, V_HEIGHT/ZOOM);
+        Camera.update(Player, V_WIDTH / ZOOM, V_HEIGHT / ZOOM);
     }
 
     function RENDER(R) {
@@ -55,13 +57,16 @@ import * as AssetLoader from "./modules/assetloader.js";
 
         //get all moving entities and insertion-sort by y val rip.
         //includes: player, enemies, not projectiles
-        Player.draw(Context.main);
+        //Player.draw(Context.main);
+
+        //wow.
+        RenderComponent.renderComponents.forEach(r => r.draw(Context.main));
 
         // //projectiles
         // this.projectileHandler.renderAll();
 
         //temp
-        tempEntityList.forEach(e => e.draw(Context.main));
+        //tempEntityList.forEach(e => e.draw(Context.main));
 
         //(fallen) items
         //ingame.drawStillImageToWorld(IMAGE.UGLY_BLADE, 50, 50 + timing.commonCounters.itemHover.getCurrentNumber());

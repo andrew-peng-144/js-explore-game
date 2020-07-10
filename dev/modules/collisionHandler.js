@@ -1,4 +1,4 @@
-import { hitboxList, Hitbox, Type, Category } from "./hitbox.js";
+import * as Hitbox from "./hitbox.js";
 import { MyMath as Utils } from "./misc/mymath.js";
 import { Vec2 } from "./geom.js";
 
@@ -6,6 +6,9 @@ import { Vec2 } from "./geom.js";
  * Call every frame...
  */
 function updateCollisionHandler() {
+
+    //return "LMFAO";
+    debugger;
 
     //get collision pairs
     var pairs = queryForCollisionPairs();
@@ -15,26 +18,27 @@ function updateCollisionHandler() {
     for (c = 0; c < pairs.length; c++) {
         h1 = pairs[c].h1;
         h2 = pairs[c].h2;
-        switch (h1.category | h2.category) {
-            case Category.BLOCK | Category.PLAYER:
-                console.log("wo");
+        console.log("CLG!!!!!!!!!");
+        // switch (h1.category | h2.category) {
+        //     case Category.BLOCK | Category.PLAYER:
+        //         console.log("wo");
 
-                break;
-            case Category.STAIR | Category.PLAYER:
-                console.log("Stairwo.");
-                playerHitbox = h1.category === Category.PLAYER ? h1 : h2;
-                stairHitbox = h1 === playerHitbox ? h2 : h1;
-                //? check if stair hitbox contains the player's center point.?
-                //debugger;
-                console.log(playerHitbox.refX + "wo"+playerHitbox.refY);
-                if (false || rectContainsPoint(160, 160, 16, 32, playerHitbox.refX, playerHitbox.refY)) { //TODO HARDCODED COORDINATES.
-                    console.log("Stairwo.WOWWOWO");
-                    v2test = temp_convertVecWo(playerHitbox.getVelocityX(), playerHitbox.getVelocityY());
-                    playerHitbox.setVelocity(v2test.x, v2test.y);
-                }
-                //playerHitbox.setVelocity(2,3);
-                break;
-        }
+        //         break;
+        //     case Category.STAIR | Category.PLAYER:
+        //         console.log("Stairwo.");
+        //         playerHitbox = h1.category === Category.PLAYER ? h1 : h2;
+        //         stairHitbox = h1 === playerHitbox ? h2 : h1;
+        //         //? check if stair hitbox contains the player's center point.?
+        //         //debugger;
+        //         console.log(playerHitbox.refX + "wo" + playerHitbox.refY);
+        //         if (false || rectContainsPoint(160, 160, 16, 32, playerHitbox.refX, playerHitbox.refY)) { //TODO HARDCODED COORDINATES.
+        //             console.log("Stairwo.WOWWOWO");
+        //             v2test = temp_convertVecWo(playerHitbox.getVelocityX(), playerHitbox.getVelocityY());
+        //             playerHitbox.setVelocity(v2test.x, v2test.y);
+        //         }
+        //         //playerHitbox.setVelocity(2,3);
+        //         break;
+        // }
     }
 }
 
@@ -57,13 +61,10 @@ function temp_convertVecWo(x, y) {
 }
 
 function queryForCollisionPairs() {
-
+    let hitboxList = Hitbox.hitboxList;
     var i, j;
-    /** @type {Hitbox}*/
     var h1;
-    /**
-      * @type {Hitbox}
-      */
+
     var h2, pairs = [], len = hitboxList.length;
 
     for (i = 0; i < len; i++) {
@@ -72,32 +73,28 @@ function queryForCollisionPairs() {
         for (j = i + 1; j < len; j++) {
             h2 = hitboxList[j];
 
-            if (h1.isStatic() && h2.isStatic()) continue; //ignore if both r static
-
-            // if (h1.isSlope() || h2.isSlope()) { //Use separating axis theorem if either hitbox is not an axis-aligned rectangle.
-            var dispkekdeletethislater, playerh,
-                hB = h1.isStatic() ? h2 : h1,
-                hA = hB === h2 ? h1 : h2;
-            if (SAT(hA, hB)) pairs.push({ h1: hA, h2: hB });
-            //}
-
-            // else { //Otherwise, just use very basic rectangle intersection algorithm.
-            //   if (Utils.intersectRect(h1, h2)) {
-            //     pairs.push({ h1: h1, h2: h2 });
-            //   }
-            // }
+            if (h1.getShapeName() === "RectangleShape" && h2.getShapeName() === "RectangleShape") {
+                if (twoRectCollision({ x: h1.getWorldXTopLeft(), y: h1.getWorldYTopLeft(), width: h1.shape.width, height: h1.shape.height },
+                    { x: h2.getWorldXTopLeft(), y: h2.getWorldYTopLeft(), width: h2.shape.width, height: h2.shape.height })) {
+                    pairs.push({ h1: h1, h2: h2 });
+                }
+            }
         }
     }
 
     return pairs;
 }
 
-function twoRectCollision (hitboxA, hitboxB) {
+function twoRectCollision(rect1, rect2) {
+    return (rect1.x < rect2.x + rect2.width &&
+        rect1.x + rect1.width > rect2.x &&
+        rect1.y < rect2.y + rect2.height &&
+        rect1.height + rect1.y > rect2.y);
 
 }
 
-function twoCircleCollision (hitboxA, hitboxB) {
-    
+function twoCircleCollision(hitboxA, hitboxB) {
+
 }
 
 /**

@@ -25,7 +25,7 @@ function getCtx(canvas) {
 }
 
 
-var tempEntityList =[];
+//var tempEntityList =[];
 function init(callback) {
 
     //canvases and contexts
@@ -90,16 +90,18 @@ function init(callback) {
     // for (let i = 0; i < 10; i++) {
     //     Hitbox.newRectBlockHitbox(5 + i * 50, 5 + i * 50, 10, 20);
     // }
-    Hitbox.newSlopeBlockHitbox(0,0,20,50,1);
-    Hitbox.newSlopeBlockHitbox(0,300,40,50,2);
-    Hitbox.newSlopeBlockHitbox(300,0,50,50,3);
-    Hitbox.newSlopeBlockHitbox(300,300,20,20,4);
+    // Hitbox.newSlopeBlockHitbox(0,0,20,50,1);
+    // Hitbox.newSlopeBlockHitbox(0,300,40,50,2);
+    // Hitbox.newSlopeBlockHitbox(300,0,50,50,3);
+    // Hitbox.newSlopeBlockHitbox(300,300,20,20,4);
+    GameEntity.createGenericEntity(100,300)
+    .withRectHitbox(100,80);
 
-    //stair test.
-    Hitbox.newStairZone_Right(160,160,16,32);
+    // //stair test.
+    // Hitbox.newStairZone_Right(160,160,16,32);
 
-    var xd = Hitbox.newRectActorHitbox(0,0,20,30,null,Hitbox.Category.ENEMY);
-    xd.setAcceleration(0.01,0);
+    // var xd = Hitbox.newRectActorHitbox(0,0,20,30,null,Hitbox.Category.ENEMY);
+    // xd.setAcceleration(0.01,0);
 
     // for (let i = 0; i < 500; i += 20) {
     //     tempEntityList.push(
@@ -116,4 +118,4 @@ function init(callback) {
 
 
 
-export { init, Canvas, Context, tempEntityList };
+export { init, Canvas, Context};

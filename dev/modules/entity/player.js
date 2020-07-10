@@ -9,20 +9,18 @@ var MovementState = {
     RUNNING: 1,
     CLIMBING_LADDER: 2,
     UNCONTROLLABLE: 3,
-    IDKLMFAO: 4
+    IDFKLMFAO: 4
 }
 Player.currentState = 0;
 
-Player.draw = function (ctx) {
-    switch(MovementState) {
-        case MovementState.STILL: break;
-    }
-    Player.gameEntity.draw(ctx);
+// Player.draw = function (ctx) {
+//     switch (MovementState) {
+//         case MovementState.STILL: break;
+//     }
+//     Player.gameEntity.draw(ctx);
 
-}
-function drawBasedOnDirection() {
-    
-}
+// }
+
 Player.update = function () {
     let speed = 2.69420//1*Math.sqrt(2);
     let rad = 0;
@@ -43,15 +41,21 @@ Player.update = function () {
     else if (right) { rad = 2 * pi; }
     else { rad = null; } //didnt move
     if (rad) {
-        Player.gameEntity.hitbox.setVelocityRT(speed, rad);
+        //debugger;
+        //Player.gameEntity.hitbox.setVelocityRT(speed, rad);
+        Player.gameEntity.kinematicComponent.setVelocityRT(speed, rad);
         this.currentState = MovementState.RUNNING;
     } else {
-        Player.gameEntity.hitbox.setVelocity(0,0);
+        //Player.gameEntity.hitbox.setVelocity(0, 0);
+        Player.gameEntity.kinematicComponent.setVelX(0).setVelY(0);
         this.currentState = MovementState.STILL;
     }
 }
 Player.init = function () {
-    Player.gameEntity = GameEntity.newActorEntity(50, 50, Image.IMAGE.NPC1, 0, 16, 16, 16);
+    Player.gameEntity = GameEntity.createGenericEntity(50, 60)
+        .withRectHitbox(34.69, 52.345345, 100)
+        .withRenderComponent(Image.IMAGE.BLAZEN)
+        .withKinematicComponent();
 }
 
 export { Player };

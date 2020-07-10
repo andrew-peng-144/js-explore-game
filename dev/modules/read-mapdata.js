@@ -5,7 +5,7 @@
 //use FileReader
 //actually use AJAX. read from the server.
 
-var levelDataFile = "bricktest.json";
+var levelDataFile = "testing3.json";
 
 //THIS IS SYNCHRONOUS. THAT MEANS EVERYTHING PAUSES UNTIL DIS IS LOADED. meaning the ENTIRE DOCUMENT! if the map's too big then it'll freeze! ree!
 var ReadMapData = {
