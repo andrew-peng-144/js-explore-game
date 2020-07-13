@@ -1,6 +1,7 @@
-import * as GameEntity from "../gameentity.js";
-import * as Image from "../image.js";
-import { Input, KeyCode } from "../input.js";
+import * as GameEntity from "./gameentity.js";
+import * as Image from "./image.js";
+import * as Hitbox from "./hitbox.js";
+import { Input, KeyCode } from "./input.js";
 
 var Player = {};
 
@@ -53,7 +54,7 @@ Player.update = function () {
 }
 Player.init = function () {
     Player.gameEntity = GameEntity.createGenericEntity(50, 60)
-        .withRectHitbox(34.69, 52.345345, 100)
+        .withRectActorHitbox(34.69, 52.345345, Hitbox.Category.PLAYER )
         .withRenderComponent(Image.IMAGE.BLAZEN)
         .withKinematicComponent();
 }

@@ -39,11 +39,19 @@ function createKinematicComponent(entityRef) {
 /**
  * Updates the gameentity's position based on current vel and accel
  */
-KinematicComponent.prototype.update = function () {
+KinematicComponent.prototype._update = function () {
     this.dx += this.ddx;
     this.dy += this.ddy;
     this.entityRef.x += this.dx;
     this.entityRef.y += this.dy;
 }
+var updateAll = function() {
+    kinematicComponents.forEach(k => k._update());
+}
 
-export { createKinematicComponent, kinematicComponents };
+//todo remove
+KinematicComponent.remove = function(i) {
+    throw "lul";
+}
+
+export { createKinematicComponent, updateAll };

@@ -89,4 +89,11 @@ function createRenderComponent(entityRef, image, offsetX, offsetY) {
     renderComponents.push(rc);
     return rc;
 }
-export { createRenderComponent, renderComponents }
+
+var drawAll = function(ctx) {
+    if (!ctx) {
+        throw "pls";
+    }
+    renderComponents.forEach(r => r.draw(ctx));
+}
+export { createRenderComponent, drawAll }

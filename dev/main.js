@@ -20,7 +20,7 @@ import { ReadMapData } from "./modules/read-mapdata.js";
 import { TileMapRenderer } from "./modules/tilemap-renderer.js";
 
 import * as DrawHitboxes from "./modules/draw-hitbox.js";
-import { Player } from "./modules/entity/player.js";
+import { Player } from "./modules/player.js";
 
 import * as AssetLoader from "./modules/assetloader.js";
 import * as RenderComponent from "./modules/render-component.js";
@@ -40,8 +40,8 @@ import * as KinematicComponent from "./modules/kinematic-component.js";
         //handle input for player... (Since this is done after stepworld, it adds 1 frame (17ms) of input delay)
         Player.update();
 
-        KinematicComponent.kinematicComponents.forEach(e => e.update());
-        updateCollisionHandler();
+        KinematicComponent.updateAll();
+        //updateCollisionHandler();
         //but for hitboxes that CHANGE the vel/accel of colliding objects, those should be updated before stepWorld?
 
         Camera.update(Player, V_WIDTH / ZOOM, V_HEIGHT / ZOOM);
@@ -60,7 +60,7 @@ import * as KinematicComponent from "./modules/kinematic-component.js";
         //Player.draw(Context.main);
 
         //wow.
-        RenderComponent.renderComponents.forEach(r => r.draw(Context.main));
+        RenderComponent.drawAll(Context.main);
 
         // //projectiles
         // this.projectileHandler.renderAll();

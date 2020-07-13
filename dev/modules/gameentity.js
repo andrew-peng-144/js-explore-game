@@ -26,10 +26,19 @@ function createGenericEntity(x, y) {
     let ge = new GameEntity(x, y);
     return ge;
 }
-GameEntity.prototype.withRectHitbox = function (w, h, offX, offY) {
-    let hit = Hitbox.createRectActorHitbox(this, offX, offY, w, h);
+GameEntity.prototype.withRectActorHitbox = function (w, h, category, offX, offY) {
+    let hit = Hitbox.createRectActorHitbox(this, offX, offY, w, h, false, category);
     this.hitbox = hit;
     return this;
+}
+GameEntity.prototype.withRectHitbox = function (rectHitbox) {
+    if (rectHitbox.constructor.name !== "Hitbox") {
+        throw "withRectHitbox() must have Hitbox passed in";
+    }
+    if (rectHitbox.shape.constructor.name !== "RectangleShape") {
+        throw "w";
+    }
+    this.hitbox = rectHitbox;
 }
 GameEntity.prototype.withRenderComponent = function (image, offX, offY) {
     let rc = RenderComponent.createRenderComponent(this, image, offX, offY);
@@ -42,6 +51,14 @@ GameEntity.prototype.withKinematicComponent = function () {
     this.kinematicComponent = kc;
     return this;
 }
+// GameEntity.prototype.fields = function(obj) {
+//     this.fields = obj;
+//     return this;
+// }
+// GameEntity.prototype.withStateMachine = function() {
+//     //how to incorporate this. since it seems to be a level above componentz.
+//     throw "LMFAO";
+// }
 
 
 //TODO animator...

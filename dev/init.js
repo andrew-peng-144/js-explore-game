@@ -4,7 +4,7 @@ import * as Constants from "./modules/globals.js";
 import { TileMapRenderer } from "./modules/tilemap-renderer.js";
 import { ReadMapData } from "./modules/read-mapdata.js";
 import * as Hitbox from "./modules/hitbox.js";
-import { Player } from "./modules/entity/player.js";
+import { Player } from "./modules/player.js";
 import { loadAssets } from "./modules/assetloader.js";
 import * as GameEntity from "./modules/gameentity.js";
 import { IMAGE } from "./modules/image.js";
@@ -94,8 +94,8 @@ function init(callback) {
     // Hitbox.newSlopeBlockHitbox(0,300,40,50,2);
     // Hitbox.newSlopeBlockHitbox(300,0,50,50,3);
     // Hitbox.newSlopeBlockHitbox(300,300,20,20,4);
-    GameEntity.createGenericEntity(100,300)
-    .withRectHitbox(100,80);
+    let fml = GameEntity.createGenericEntity(100,300);
+    fml.withRectHitbox(Hitbox.createRectBlockHitbox(fml, 0, 0, 50, 30, true));
 
     // //stair test.
     // Hitbox.newStairZone_Right(160,160,16,32);
