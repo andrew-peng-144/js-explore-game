@@ -1,7 +1,4 @@
-import * as GameEntity from "./gameentity.js";
-import * as Image from "./image.js";
-import * as Hitbox from "./hitbox.js";
-import { Input, KeyCode } from "./input.js";
+
 
 var Player = {};
 
@@ -42,7 +39,7 @@ Player.update = function () {
     else if (right) { rad = 2 * pi; }
     else { rad = null; } //didnt move
     if (rad) {
-        //debugger;
+ 
         //Player.gameEntity.hitbox.setVelocityRT(speed, rad);
         Player.gameEntity.kinematicComponent.setVelocityRT(speed, rad);
         this.currentState = MovementState.RUNNING;

@@ -1,25 +1,29 @@
-import {Input, KeyCode} from "./input.js";
-var c = {};
 
-var exactX = 0, exactY = 0;
-c.getExactX = function () {
-    return exactX;
+
+function Camera2D() {
+    this.exactX = 0;
+    this.exactY = 0;
+}
+
+Camera2D.prototype.getExactX = function () {
+    return this.exactX;
 } //idk
-c.getExactY = function () {
-    return exactY;
+Camera2D.prototype.getExactY = function () {
+    return this.exactY;
 }
-c.getX = function() {
-    return Math.round(exactX);
+Camera2D.prototype.getX = function() {
+    return Math.round(this.exactX);
 }
-c.getY = function() {
-    return Math.round(exactY);
+Camera2D.prototype.getY = function() {
+    return Math.round(this.exactY);
 }
 /**
  * Updates the position of the camera:
  * locks it to the player
+ * // TODO: smoother camera movement.
  * @param width the width of what area the camera should view (usually the entire viewport)
  */
-c.update = function (player, width, height) {
+Camera2D.prototype.update = function (player, width, height) {
     // var speed = 3.32323;
     // if (Input.keyPressed(KeyCode.UP)) {
     //     exactY-=speed;
@@ -34,11 +38,15 @@ c.update = function (player, width, height) {
     //     exactX+=speed;
     // }
     
-    exactX = player.gameEntity.x + player.gameEntity.renderComponent.offsetX - width / 2 + player.gameEntity.renderComponent.getWidth() / 2;
-    exactY = player.gameEntity.y + player.gameEntity.renderComponent.offsetY - height / 2 + player.gameEntity.renderComponent.getHeight() / 2;
+    this.exactX = player.gameEntity.x + player.gameEntity.renderComponent.offsetX - width / 2 + player.gameEntity.renderComponent.getWidth() / 2;
+    this.exactY = player.gameEntity.y + player.gameEntity.renderComponent.offsetY - height / 2 + player.gameEntity.renderComponent.getHeight() / 2;
     // if (camera.x < 0) camera.x = 0;
     // if (camera.x > map.width * TILEWIDTH - canvas.width) camera.x = map.width * TILEWIDTH - canvas.width;
     // if (camera.y < 0) camera.y = 0;
     // if (camera.y > map.height * TILEHEIGHT - canvas.height) camera.y = map.height * TILEHEIGHT - canvas.height;
 }
-export {c as Camera};
+
+function createCamera2D() {
+    return new Camera2D();
+}
+export {createCamera2D};

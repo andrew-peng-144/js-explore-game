@@ -7,7 +7,7 @@
 
 
 
-import { Point } from "./geom.js";
+import { Point } from "../main/geom.js";
 /**
  * Call to step the physics simulation
  * @type {Hitbox[]}

@@ -1,9 +1,7 @@
-import { MyImage, IMAGE } from "./image.js";
+
 import * as Hitbox from "./hitbox.js";
 import * as RenderComponent from "./render-component.js"
-import { TILE_SIZE, ZOOM } from "./globals.js";
-import { Camera } from "./camera.js";
-import * as AssetLoader from "./assetloader.js";
+import * as AssetLoader from "../main/assetloader.js";
 import * as KinematicComponent from "./kinematic-component.js";
 //var idCounter = 0; //unique id for each gameentity
 
@@ -22,7 +20,7 @@ function GameEntity(x, y) {
 }
 
 
-function createGenericEntity(x, y) {
+function createEntity(x, y) {
     let ge = new GameEntity(x, y);
     return ge;
 }
@@ -40,8 +38,8 @@ GameEntity.prototype.withRectHitbox = function (rectHitbox) {
     }
     this.hitbox = rectHitbox;
 }
-GameEntity.prototype.withRenderComponent = function (image, offX, offY) {
-    let rc = RenderComponent.createRenderComponent(this, image, offX, offY);
+GameEntity.prototype.withRenderComponent = function (ctx, imageSection, camera, offsetX, offsetY) {
+    let rc = RenderComponent.createRenderComponent(this, ctx, imageSection, camera, offsetX, offsetY);
     this.renderComponent = rc;
     return this;
 
@@ -50,6 +48,9 @@ GameEntity.prototype.withKinematicComponent = function () {
     let kc = KinematicComponent.createKinematicComponent(this);
     this.kinematicComponent = kc;
     return this;
+}
+GameEntity.prototype.withBehavior = function () {
+    // TODO general scripting that runs every frame
 }
 // GameEntity.prototype.fields = function(obj) {
 //     this.fields = obj;
@@ -84,5 +85,5 @@ GameEntity.prototype.withKinematicComponent = function () {
 // })();
 
 
-export { createGenericEntity }
+export { createEntity }
 //export { newGenericEntity, newActorEntity, GameEntity };

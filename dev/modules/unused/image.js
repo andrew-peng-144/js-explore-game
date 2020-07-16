@@ -1,3 +1,5 @@
+//old but reuse sum
+
 
 import { V_WIDTH, V_HEIGHT, TILE_SIZE, ZOOM } from "./globals.js";
 import * as AssetLoader from "./assetloader.js";

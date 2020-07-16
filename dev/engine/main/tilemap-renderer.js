@@ -1,25 +1,32 @@
-import { ReadMapData } from "./read-mapdata.js";
-import { TILE_SIZE, V_WIDTH, V_HEIGHT, STEP, ZOOM } from "./globals.js"
-import { Camera } from "./camera.js";
+import * as ReadMapData from "./read-mapdata.js";
+import * as Settings from "../settings.js";
+//import { TILE_SIZE, V_WIDTH, V_HEIGHT, STEP, ZOOM } from "../modules/globals.js"
+//import { Camera } from "./camera.js";
+
+//TODO a way to set the canvas (tat has a camera).
 //Renders the tiles!
 //May do optimizations later!
 //For now, it just picks the tiles that are within the screen bounds and only renders those!!
-var TileMapRenderer = {};
 
 /**
- * 
- * @param {CanvasRenderingContext2D} ctx 
  * @param {HTMLImageElement} tilesetImage
  * @param {Number} tilesetTWidth width of the tileset in tiles.
  */
-function render(ctx, tilesetImage, tilesetTWidth) {
+function renderVisibleTiles(canvas, camera, tilesize, tilesetImage, tilesetTWidth) {
+    if (typeof canvas !== "HTMLCanvasElement") {
+        throw "bruh";
+    }
+    let ctx = canvas.getContext("2d");
+    let TILE_SIZE = tilesize;
+    let ZOOM = Settings.ZOOM;
+
     //only render visible tiles.
     tilesetTWidth = tilesetTWidth || 16;
     let x, y, id, //x: x coodinate of the map array.
-        xi = Math.floor(Camera.getExactX() / TILE_SIZE), //these 4 are in units of tiles.
-        xf = Math.ceil((Camera.getExactX() + V_WIDTH) / TILE_SIZE),
-        yi = Math.floor(Camera.getExactY() / TILE_SIZE),
-        yf = Math.ceil((Camera.getExactY() + V_HEIGHT) / TILE_SIZE);
+        xi = Math.floor(camera.getExactX() / TILE_SIZE), //these 4 are in units of tiles.
+        xf = Math.ceil((camera.getExactX() + canvas.width) / TILE_SIZE),
+        yi = Math.floor(camera.getExactY() / TILE_SIZE),
+        yf = Math.ceil((camera.getExactY() + canvas.height) / TILE_SIZE);
     //console.log("xi " + xi + " xf " + xf + " yi " + yi + " yf" + yf);
     var arr = ReadMapData.mapArr;
     for (x = xi; x < xf; x++) {
@@ -32,8 +39,8 @@ function render(ctx, tilesetImage, tilesetTWidth) {
                         Math.floor((id - 1) / tilesetTWidth) * TILE_SIZE,
                         TILE_SIZE,
                         TILE_SIZE,
-                        (x * TILE_SIZE - Camera.getX()) * ZOOM,
-                        (y * TILE_SIZE - Camera.getY()) * ZOOM,
+                        (x * TILE_SIZE - camera.getX()) * ZOOM,
+                        (y * TILE_SIZE - camera.getY()) * ZOOM,
                         TILE_SIZE * ZOOM,
                         TILE_SIZE * ZOOM);
 
@@ -43,5 +50,4 @@ function render(ctx, tilesetImage, tilesetTWidth) {
     }
 }
 
-TileMapRenderer.render = render;
-export { TileMapRenderer };
+export { renderVisibleTiles };

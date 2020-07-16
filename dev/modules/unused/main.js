@@ -1,30 +1,17 @@
 //top level module
 
-import { TILE_SIZE, V_WIDTH, V_HEIGHT, STEP, ZOOM } from "./modules/globals.js";
-import { init, Canvas, Context } from "./init.js";
-import { Input, KeyCode } from "./modules/input.js";
-
-import { IMAGE, MyImage } from "./modules/image.js";
-
-import { PubSub } from "./modules/pubsub.js";
-
-import * as Hitbox from "./modules/hitbox.js"
-import { updateCollisionHandler } from "./modules/collisionHandler.js";
-
-import { drawImageToScreen } from "./modules/draw.js";
+import { TILE_SIZE, V_WIDTH, V_HEIGHT, STEP, ZOOM } from "./globals.js";
 
 import { Camera } from "./modules/camera.js";
 
-import { ReadMapData } from "./modules/read-mapdata.js";
+import { TileMapRenderer } from "../engine/tilemap-renderer.js";
 
-import { TileMapRenderer } from "./modules/tilemap-renderer.js";
-
-import * as DrawHitboxes from "./modules/draw-hitbox.js";
-import { Player } from "./modules/player.js";
+import * as DrawHitboxes from "./draw-hitbox.js";
+import { Player } from "./player.js";
 
 import * as AssetLoader from "./modules/assetloader.js";
-import * as RenderComponent from "./modules/render-component.js";
-import * as KinematicComponent from "./modules/kinematic-component.js";
+import * as RenderComponent from "../engine/render-component.js";
+import * as KinematicComponent from "../engine/kinematic-component.js";
 (function () {
     function UPDATE(T) {
 

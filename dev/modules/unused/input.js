@@ -1,3 +1,5 @@
+//unused
+
 var i = {}; //public variables
 
 var keys = new Array(256); //keys pressed in this frame.

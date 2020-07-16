@@ -1,7 +1,7 @@
 //not done f.
-import * as Hitbox from "./hitbox.js";
+import * as Hitbox from "../engine/hitbox.js";
 import { Camera } from "./camera.js";
-import { ZOOM } from "./globals.js";
+import { ZOOM } from "../globals.js";
 function drawHitboxes(context) {
     context.save();
     /**@type {Hitbox.Hitbox} */

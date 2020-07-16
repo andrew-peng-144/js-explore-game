@@ -1,6 +1,5 @@
-import * as Hitbox from "./hitbox.js";
-import { MyMath as Utils } from "./misc/mymath.js";
-import { Vec2 } from "./geom.js";
+//unused? moved to hitbox?
+
 
 /**
  * Call every frame...
@@ -10,7 +9,7 @@ function updateCollisionHandler() {
     //return "LMFAO";
 
     //TODO TRY USING "MEDIATOR" PATTERN TO HANDLE COLLISIONS. CUZ TWO CLASSES NEEDA HAVE EQUAL INPUT
-    debugger;
+
 
     //get collision pairs
     var pairs = queryForCollisionPairs();
@@ -47,7 +46,7 @@ function updateCollisionHandler() {
                 // playerHitbox = h1.category === Category.PLAYER ? h1 : h2;
                 // stairHitbox = h1 === playerHitbox ? h2 : h1;
                 // //? check if stair hitbox contains the player's center point.?
-                // //debugger;
+
                 // console.log(playerHitbox.refX + "wo" + playerHitbox.refY);
                 // if (false || rectContainsPoint(160, 160, 16, 32, playerHitbox.refX, playerHitbox.refY)) { //TODO HARDCODED COORDINATES.
                 //     console.log("Stairwo.WOWWOWO");

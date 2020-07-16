@@ -15,7 +15,7 @@ var V_HEIGHT = res.h;
 /**
  * PIXEL SIZE! INTEGERS 1+ ONLY! Game logic/physics takes place with zoom=1, but all the rendering at zoom=n.
  */
-const ZOOM = 2; //
-const STEP = 1 / 60;
+// const ZOOM = 2; //
+// const STEP = 1 / 60;
 
-export { TILE_SIZE, V_WIDTH, V_HEIGHT, STEP, ZOOM };
+export { TILE_SIZE, V_WIDTH, V_HEIGHT};

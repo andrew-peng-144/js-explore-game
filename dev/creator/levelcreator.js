@@ -221,7 +221,7 @@ $(document).ready(function () {
         //SLIDER
         let sliderZoomEl = document.querySelector("#sliderZoom");
         sliderZoomEl.addEventListener("input", function (e) {
-            debugger;
+       
             GLOBAL.zoom = Number.parseInt(this.value);
             redrawMain();
         });
@@ -404,7 +404,7 @@ $(document).ready(function () {
         // var wx = x + Camera.getX();
         // var wy = y + Camera.getY();
         //let id;
-        debugger;
+
         //if (wx > 0 && wx < GLOBAL.gridWidth * TILE_SIZE && wy > 0 && wy < GLOBAL.gridHeight * TILE_SIZE) {
         //id = getIDfromLabel();
         if (editDrawBuffer(Math.floor(wx / TILE_SIZE), Math.floor(wy / TILE_SIZE), id)) {
@@ -436,7 +436,7 @@ $(document).ready(function () {
      * @param {Number} x The x coordinate of the mouse on the canvas, in pixels, not accounting for zoom
      */
     function placeAndDrawTilesOnClick(x, y, width, height) {
-        debugger;
+
         let id = GLOBAL.rightMouseIsDownMain ? 0 : getIDfromLabel();
         for (let w = 0; w < width; w++) {
             for (let h = 0; h < height; h++) {
