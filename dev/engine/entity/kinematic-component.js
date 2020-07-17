@@ -1,6 +1,6 @@
 //add this component to a gameentity to make it MVOE!
 //meaning that the x and y of it can change over time now. thru vel and accel
-var kinematicComponents = []
+var kinematicComponents = new Set();
 
 function KinematicComponent(entityRef) {
     this.entityRef = entityRef;
@@ -30,10 +30,13 @@ KinematicComponent.prototype.setAccelY = function (y) {
     this.ddy = y;
     return this;
 }
+KinematicComponent.prototype.remove = function() {
+    kinematicComponents.delete(this);
+}
 
 function createKinematicComponent(entityRef) {
     let kc = new KinematicComponent(entityRef);
-    kinematicComponents.push(kc);
+    kinematicComponents.add(kc);
     return kc;
 }
 /**

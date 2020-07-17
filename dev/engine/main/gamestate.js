@@ -49,6 +49,11 @@ function setStartingState(id) {
     currentState = gs;
     return gs;
 }
+/**
+ * Component updating must be done by the user! the engine does not call component update.
+ * Call them by category using Entity.update<component>
+ * @param {Function} func 
+ */
 GameState.prototype.setUpdate = function (func) {
     if (Engine.hasStarted()) {
         throw "game already started can't modify state";

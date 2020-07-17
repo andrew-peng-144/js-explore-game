@@ -1,5 +1,5 @@
 //use ma engine
-import * as Engine from "../engine/engine.js";
+import * as Engine from "/dev/engine/engine.js";
 
 import * as MainState from "./gamestate/mainstate.js";
 

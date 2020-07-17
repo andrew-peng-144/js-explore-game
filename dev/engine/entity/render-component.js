@@ -93,8 +93,11 @@ RenderComponent.prototype.getWidth = function () {
 RenderComponent.prototype.getHeight = function () {
     return this.imageSection.sh;
 }
+RenderComponent.prototype.remove = function () {
+    renderComponents.delete(this);
+}
 
-var renderComponents = [];
+var renderComponents = new Set();
 
 /**
  * 
@@ -106,7 +109,7 @@ function createRenderComponent(entityRef, ctx, imageSection, offsetX, offsetY) {
     }
 
     let rc = new RenderComponent(entityRef, ctx, imageSection, offsetX, offsetY);
-    renderComponents.push(rc);
+    renderComponents.add(rc);
     return rc;
 }
 

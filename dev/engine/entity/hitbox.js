@@ -12,7 +12,7 @@ import { Point } from "../main/geom.js";
  * Call to step the physics simulation
  * @type {Hitbox[]}
  */
-var hitboxList = [];
+var hitboxes = new Set();
 
 /**
  * DO NOT USE THIS CONSTRUCTOR IN OTHER FILES.
@@ -89,6 +89,9 @@ Hitbox.prototype.withCollisionHandle = function (func) {
     this.onCollide = func;
 }
 
+Hitbox.prototype.remove = function() {
+    hitboxes.delete(this);
+}
 
 /**
  * ZONE: Doesn't move, doesn't push other hitboxes. Only for detection. (e.g. pressure plate, target, z-transformer.)
@@ -126,19 +129,20 @@ var Category = {
     b17: 131072 //BOMBER!!!!!!!!!
 }
 
+
 // }
 /**
 * @param {Number} offsetX the number of pixels that this hitbox is offset from the CENTER of the gameentity
 */
 function createRectBlockHitbox(gameEntity, offX, offY, w, h, solid) {
     let hit = new Hitbox(gameEntity, new RectangleShape(w, h), Category.BLOCK, 0, offX, offY, solid);
-    hitboxList.push(hit);
+    hitboxes.add(hit);
     return hit;
 }
 
 function createRectActorHitbox(gameEntity, offX, offY, w, h, solid, category) {
     let hit = new Hitbox(gameEntity, new RectangleShape(w, h), category || Category.DEFAULT, 0, offX, offY, solid);
-    hitboxList.push(hit);
+    hitboxes.add(hit);
     return hit;
 }
 
@@ -158,32 +162,34 @@ var checkForCollisions = function () {
     var i, j;
     var h1;
 
-    var h2, pairs = [], len = hitboxList.length;
+    //var h2, pairs = [], len = hitboxList.length;
 
-    for (i = 0; i < len; i++) {
-        h1 = hitboxList[i];
+    // for (i = 0; i < len; i++) {
+    //     h1 = hitboxList[i];
 
-        for (j = i + 1; j < len; j++) {
-            h2 = hitboxList[j];
+    //     for (j = i + 1; j < len; j++) {
+    //         h2 = hitboxList[j];
 
-            if (h1.getShapeName() === "RectangleShape" && h2.getShapeName() === "RectangleShape") {
-                if (twoRectCollision(
-                    { x: h1.getWorldXTopLeft(), y: h1.getWorldYTopLeft(), width: h1.shape.width, height: h1.shape.height },
-                    { x: h2.getWorldXTopLeft(), y: h2.getWorldYTopLeft(), width: h2.shape.width, height: h2.shape.height })) {
+    //         if (h1.getShapeName() === "RectangleShape" && h2.getShapeName() === "RectangleShape") {
+    //             if (twoRectCollision(
+    //                 { x: h1.getWorldXTopLeft(), y: h1.getWorldYTopLeft(), width: h1.shape.width, height: h1.shape.height },
+    //                 { x: h2.getWorldXTopLeft(), y: h2.getWorldYTopLeft(), width: h2.shape.width, height: h2.shape.height })) {
 
-                    if (typeof h1.onCollide === "function") {
-                        h1.onCollide(h2);
-                    }
-                    if (typeof h2.onCollide === "function") {
-                        h2.onCollide(h1);
-                    }
+    //                 if (typeof h1.onCollide === "function") {
+    //                     h1.onCollide(h2);
+    //                 }
+    //                 if (typeof h2.onCollide === "function") {
+    //                     h2.onCollide(h1);
+    //                 }
 
-                    //pairs.push({ h1: h1, h2: h2 })
-                    ;
-                }
-            }
-        }
-    }
+    //                 //pairs.push({ h1: h1, h2: h2 })
+    //                 ;
+    //             }
+    //         }
+    //     }
+    // }
+
+    //TODO iterate thru the hitboxes Set...
 
     // pairs.forEach(pair => {
     //     switch (pair.h1.category | pair.h2.category) {
@@ -205,4 +211,4 @@ function twoRectCollision(rect1, rect2) {
 
 
 //export { hitboxList, stepWorld, Type, Category, newRectBlockHitbox, newRectActorHitbox, newSlopeBlockHitbox, newStairZone_Right }
-export { createRectBlockHitbox, createRectActorHitbox, hitboxList, Category, checkForCollisions };
+export { createRectBlockHitbox, createRectActorHitbox, Category, checkForCollisions };

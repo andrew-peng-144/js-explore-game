@@ -3,6 +3,7 @@ import * as Hitbox from "./hitbox.js";
 import * as RenderComponent from "./render-component.js"
 import * as AssetLoader from "../main/assetloader.js";
 import * as KinematicComponent from "./kinematic-component.js";
+import * as InputComponent from "./input-component.js";
 //var idCounter = 0; //unique id for each gameentity
 
 /**
@@ -17,6 +18,12 @@ import * as KinematicComponent from "./kinematic-component.js";
 function GameEntity(x, y) {
     this.x = x;
     this.y = y;
+
+    this.hitbox = null;
+    this.renderComponent = null;
+    this.kinematicComponent = null;
+    this.inputComponent = null;
+    this.customBehavior = null;
 }
 
 
@@ -49,9 +56,39 @@ GameEntity.prototype.withKinematicComponent = function () {
     this.kinematicComponent = kc;
     return this;
 }
+/**
+ * Makes this gameentity respond to key events. A Set of keys down is sent as the argument to the callback. (0 isn't a key)
+ * @param {Function} callback 
+ */
+GameEntity.prototype.withInputComponent = function (callback) {
+    let ic = InputComponent.createInputComponent().setKeyListener(callback);
+    this.inputComponent = ic;
+    return this;
+}
 GameEntity.prototype.withBehavior = function () {
     // TODO general scripting that runs every frame
 }
+
+
+GameEntity.prototype.remove = function () {
+    //TODO clean remove that disposes all components
+
+    //Nothing actually stores the GameEntity! in the engine at least. the user can still obviously store it so they ca nremove it later
+    //It's only its components that are stored in their respective data structures.
+    if (this.hitbox) {
+        this.hitbox.remove();
+    }
+    if (this.renderComponent) {
+        this.renderComponent.remove();
+    }
+    if (this.kinematicComponent) {
+        this.kinematicComponent.remove();
+    }
+    if (this.inputComponent) {
+        this.inputComponent.remove();
+    }
+}
+
 // GameEntity.prototype.fields = function(obj) {
 //     this.fields = obj;
 //     return this;
@@ -60,7 +97,6 @@ GameEntity.prototype.withBehavior = function () {
 //     //how to incorporate this. since it seems to be a level above componentz.
 //     throw "LMFAO";
 // }
-
 
 //TODO animator...
 // (function Animator() {
