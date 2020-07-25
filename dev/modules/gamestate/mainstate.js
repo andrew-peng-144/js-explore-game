@@ -2,9 +2,12 @@ import * as Engine from "/dev/engine/engine.js";
 
 
 import * as CM from "../canvas-manager.js";
-import * as Settings from "../settings.js";
+import * as MySettings from "../mysettings.js";
 import * as ImageDef from "../imagedef.js";
 import * as KeyCode from "../misc/keycode.js";
+import * as ReadMapData from "../misc/read-mapdata.js";
+import * as MyAssetLoader from "../myassetloader.js";
+
 //"implments" state "interface"
 
 //lul
@@ -35,7 +38,9 @@ function onEnter(from) {
 
 
     ent = Engine.Entity.createEntity(30, 30)
-        .withRenderComponent(CM.Context.main, ImageDef.imageSections.LINKIN, cam)
+        .withRenderComponent(CM.Context.main,
+            ImageDef.issToImageSection(ImageDef.imageStringSections.LINKIN, MyAssetLoader.assets),
+            cam)
         .withInputComponent(function (keySet) {
             if (keySet.has(KeyCode.W)) {
                 console.log("YO");
@@ -44,9 +49,28 @@ function onEnter(from) {
 
     //create another one to test, but dont save ref
     Engine.Entity.createEntity(50, 60)
-        .withRenderComponent(CM.Context.main, ImageDef.imageSections.NPC1, cam);
+        .withRenderComponent(CM.Context.main,
+            ImageDef.issToImageSection(ImageDef.imageStringSections.NPC1, MyAssetLoader.assets),
+            cam);
 
     //window.setTimeout(function () { Engine.State.queueState(1); }, 1000);
+
+    //load map (costly) (synchronous for now)
+    ReadMapData.read("./assets/leveldata/testing3.json");
+
+    if (!ReadMapData.hasLoaded()) {
+        throw "wut";
+    }
+
+    //setup tilemap renderer
+    Engine.TileMapRenderer.settings()
+        .setCanvas(CM.Canvas.main)
+        .setCamera(cam)
+        .setMapArray(ReadMapData.getMapArray())
+        .setMapTWidth(ReadMapData.getMapWidthInTiles())
+        .setTilesetImage(MyAssetLoader.getAsset("./assets/images/tileset.png"))
+        .setTilesize(16);
+
 }
 function onExit(to) {
     console.log("exited mainstate, to " + to);
@@ -67,8 +91,9 @@ function update() {
     }
 }
 function render() {
-    CM.Context.main.clearRect(0, 0, Settings.V_WIDTH, Settings.V_HEIGHT);
+    CM.Context.main.clearRect(0, 0, MySettings.V_WIDTH, MySettings.V_HEIGHT);
     //CM.Context.main.fillRect(50, 50 + i, 60, 60);
+    Engine.TileMapRenderer.renderVisibleTiles();
     Engine.Entity.drawRenderComponents();
 
     CM.Context.main.fillText('MAIN STATE', 10, 50);

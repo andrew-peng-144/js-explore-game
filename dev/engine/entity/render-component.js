@@ -6,7 +6,7 @@
 //https://stackoverflow.com/questions/39007637/javascript-set-vs-array-performance
 
 import * as Settings from "../settings.js";
-import * as AssetLoader from "../main/assetloader.js";
+//import * as AssetLoader from "../main/assetloader.js";
 
 function RenderComponent(entityRef, ctx, imageSection, camera, offsetX, offsetY) {
     this.entityRef = entityRef;
@@ -50,35 +50,33 @@ RenderComponent.prototype.draw = function () {
     let destX = Math.round((this.entityRef.x - this.getWidth() / 2 - this.offsetX - this.camera.getExactX()) * zoom);
     let destY = Math.round((this.entityRef.y - this.getHeight() / 2 - this.offsetY - this.camera.getExactY()) * zoom);
     // let cam = canvasData.settings.camera;
-    if (!AssetLoader.assets[this.imageSection.imgFileName]) {
-        throw "can't draw asset isn't loaded lmao";
-    }
+    // if (!AssetLoader.getAsset(this.imageSection.imgFileName)) {
+    //     throw "can't draw asset isn't loaded lmao";
+    // }
+    let sx = this.imageSection.sx,
+        sy = this.imageSection.sy,
+        sw = this.imageSection.sw,
+        sh = this.imageSection.sh,
+        dw = this.imageSection.sw * zoom,
+        dh = this.imageSection.sh * zoom;
 
     if (this.camera) {
         //if canvas has a 2d camera, draw relative to the camera's pos
 
-        this.ctx.drawImage(AssetLoader.assets[this.imageSection.imgFileName],
-            this.imageSection.sx,
-            this.imageSection.sy,
-            this.imageSection.sw,
-            this.imageSection.sh,
+        this.ctx.drawImage(this.imageSection.image,
+            sx, sy, sw, sh,
             destX,
             destY,
-            this.imageSection.sw * zoom,
-            this.imageSection.sh * zoom
+            dw, dh
         );
 
     } else {
         //no camera, just draw absolute position
-        this.ctx.drawImage(AssetLoader.assets[this.imageSection.imgFileName],
-            this.imageSection.sx,
-            this.imageSection.sy,
-            this.imageSection.sw,
-            this.imageSection.sh,
+        this.ctx.drawImage(this.imageSection.image,
+            sx, sy, sw, sh,
             Math.round((this.entityRef.x - this.getWidth() / 2 - this.offsetX) * zoom),
             Math.round((this.entityRef.y - this.getHeight() / 2 - this.offsetY) * zoom),
-            this.imageSection.sw * zoom,
-            this.imageSection.sh * zoom
+            dw, dh
         );
     }
 
@@ -104,9 +102,9 @@ var renderComponents = new Set();
  * @param {Number} offsetX the number of pixels that this image is offset (subtracted) from the center of the gameentity
  */
 function createRenderComponent(entityRef, ctx, imageSection, offsetX, offsetY) {
-    if (AssetLoader.getNumAssets === 0) {
-        throw "can't create render component if there's no assets loaded";
-    }
+    // if (AssetLoader.getNumAssets === 0) {
+    //     throw "can't create render component if there's no assets loaded";
+    // }
 
     let rc = new RenderComponent(entityRef, ctx, imageSection, offsetX, offsetY);
     renderComponents.add(rc);

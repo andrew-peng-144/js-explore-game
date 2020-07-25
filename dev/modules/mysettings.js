@@ -18,4 +18,10 @@ var V_HEIGHT = res.h;
 // const ZOOM = 2; //
 // const STEP = 1 / 60;
 
-export { TILE_SIZE, V_WIDTH, V_HEIGHT};
+var GameStateID = {
+    Menu: 1,
+    Main: 2,
+    FirstLoad: 3
+}
+
+export { TILE_SIZE, V_WIDTH, V_HEIGHT, GameStateID};

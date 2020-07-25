@@ -1,33 +1,50 @@
 import * as Engine from "../engine/engine.js";
+//Defines a STRING PATH, and associated SLICE DATA.
+//purely declaratory, no procedural stuff.
+//The declarations are for use with the Engine's HTMLImageSlice.
+//Which is exactly the same as this except it's the actual html image object instead of the string path.
 
 let TILE_SIZE = 16;
-function newStillImage(imgName, sxt, syt, swt = 1, sht = 1) {
-    return Engine.ImageSection.newImageSlice("./assets/images/" + imgName,
-        sxt * TILE_SIZE, syt * TILE_SIZE, swt * TILE_SIZE, sht * TILE_SIZE);
+function wow(imgName, sxt, syt, swt = 1, sht = 1) {
+    return {
+        name: imgName,
+        sx: sxt * TILE_SIZE,
+        sy: syt * TILE_SIZE,
+        sw: swt * TILE_SIZE,
+        sh: sht * TILE_SIZE,
+        asdfwow: "WOW" //a way to put a "unique identifier" to this "class" LMFAO
+    };
 }
-function newAnimatedImage(imgName, n, sxt, syt, swt = 1, sht = 1) {
-    return Engine.ImageSection.newImageStrip("./assets/images/" + imgName,
-        n, sxt * TILE_SIZE, syt * TILE_SIZE, swt * TILE_SIZE, sht * TILE_SIZE);
+function awow(imgName, n, sxt, syt, swt = 1, sht = 1) {
+    return {
+        name: imgName,
+        n: n,
+        sx: sxt * TILE_SIZE,
+        sy: syt * TILE_SIZE,
+        sw: swt * TILE_SIZE,
+        sh: sht * TILE_SIZE,
+        asdfwow: "WOW"
+    };
 }
 
-let p = "props.png";
-let s = "sprites.png";
+let p = "./assets/images/props.png";
+let s = "./assets/images/sprites.png";
 
-var imageSections = {
+var imageStringSections = {
 
-    TREE: newStillImage(p, 0, 0, 2, 3),
-    SMALLTREE: newStillImage(p, 2, 0, 1, 2),
-    BLUE_ORB: newStillImage(p, 0, 8),
+    TREE: wow(p, 0, 0, 2, 3),
+    SMALLTREE: wow(p, 2, 0, 1, 2),
+    BLUE_ORB: wow(p, 0, 8),
 
-    NPC1: newStillImage(s, 1, 0, 1, 2),
-    FIRE_BLADE: newStillImage(s, 0, 4),
-    UGLY_BLADE: newStillImage(s, 1, 4),
-    RAINBALL: newStillImage(s, 2, 4, 4, 20),
+    NPC1: wow(s, 1, 0, 1, 2),
+    FIRE_BLADE: wow(s, 0, 4),
+    UGLY_BLADE: wow(s, 1, 4),
+    RAINBALL: wow(s, 2, 4, 4, 20),
 
-    LINKIN: newStillImage(s, 0, 6),
+    LINKIN: wow(s, 0, 6),
     //BLAZEN: newAnimatedImage(s, 0, 5, 7, 8),
-    GOHST: newStillImage(s, 1, 6),
-    BOB: newAnimatedImage(s, 10, 4, 0, 10, 1, 2), //new ATImg(s, 6, 9, 0, 10, 1, 2),
+    GOHST: wow(s, 1, 6),
+    BOB: awow(s, 10, 4, 0, 10, 1, 2), //new ATImg(s, 6, 9, 0, 10, 1, 2),
 
 
     //CLOUD_BKGD: newBackgroundImage("clouds_test_bkgd.png"),
@@ -38,4 +55,37 @@ var imageSections = {
     // WALKING_DOWN_TEST: newAnimatedImage(s, 6, 4, 2, 13, 1, 2)
 };
 
-export { imageSections }
+/**
+ * RETURNS a HTMLImageSection (from Engine) given the imageStringSection.
+ * The HTML image element is specified by the second arg of this function
+ * @param {idk} imageStringSection iss. defined in this file (have the asdfwow property lmao)
+ * @param {Object} assets An object mapping String -> HTMLImageElement. The Strings are the full path to image.
+ */
+function issToImageSection(imageStringSection, assets) {
+    if (imageStringSection.asdfwow !== "WOW") {
+        //not even an iss
+        throw "RIP";
+    }
+
+    if (imageStringSection.n) {
+        return Engine.HTMLImageSection.newImageStrip(assets[imageStringSection.name],
+            imageStringSection.n,
+            imageStringSection.sx,
+            imageStringSection.sy,
+            imageStringSection.sw,
+            imageStringSection.sh
+
+        );
+    } else {
+        return Engine.HTMLImageSection.newImageSlice(assets[imageStringSection.name],
+            imageStringSection.sx,
+            imageStringSection.sy,
+            imageStringSection.sw,
+            imageStringSection.sh
+
+        );
+    }
+
+}
+
+export { issToImageSection, imageStringSections }

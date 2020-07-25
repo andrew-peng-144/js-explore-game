@@ -13,6 +13,7 @@ EXAMPLES OF MAP DATA:
 //test 1000x1000. shud be ~1MB
 //output a uint8 array 1 million long. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array
+//thi shas a 256 tile limit
 
 
 //use FileReader
@@ -20,11 +21,12 @@ https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 */
 var levelDataFile = "testing3.json";
 
-//THIS IS SYNCHRONOUS. THAT MEANS EVERYTHING PAUSES UNTIL DIS IS LOADED. meaning the ENTIRE DOCUMENT! if the map's too big then it'll freeze! ree!
+//SYNCHRONOUS MEANS EVERYTHING PAUSES UNTIL DIS IS LOADED. meaning the ENTIRE DOCUMENT! if the map's too big then it'll freeze! ree!
 
 let mapArr = null;
 let mapTWidth = null;
 let init = null;
+let mapLoaded = false;
 
 
 function loadDoc(url) {
@@ -37,9 +39,10 @@ function loadDoc(url) {
             var obj = JSON.parse(this.responseText);
             mapArr = obj.map;
             mapTWidth = obj.width;
+            mapLoaded = true;
         }
     };
-    xhttp.open("GET", url, true); //asynchronous. //TODO does this work
+    xhttp.open("GET", url, false); //synchronous. //TODO make asynchronous when loading states are implemented
     xhttp.send();
 }
 
@@ -59,11 +62,25 @@ function str2view(str) {
     return bufView;
 }
 
-init = function () {
-    console.log("Load dat start: " + new Date().getTime());
-    loadDoc("assets/leveldata/" + levelDataFile);
+/**
+ * Loads the level data from the given path into RAM.
+ * @param {String} path
+ */
+let read = function (path) {
+    console.log("Load map start: " + new Date().getTime());
+    loadDoc(path);
+}
+
+function getMapArray() {
+    return mapArr;
+}
+function getMapWidthInTiles() {
+    return mapTWidth;
+}
+function hasLoaded() {
+    return mapLoaded;
 }
 
 
 
-export { init, mapArr, mapTWidth };
+export { read, getMapArray, getMapWidthInTiles, hasLoaded };

@@ -1,4 +1,4 @@
-import * as Settings from "./settings.js";
+import * as MySettings from "./mysettings.js";
 var Canvas = {
     gui, main, bkgd// terrain, propBkgd, entity, propFrgd
 }
@@ -12,20 +12,20 @@ function getWoCtx(canvas) {
 }
 
 Canvas.gui = document.getElementById('gui');
-Canvas.gui.width = Settings.V_WIDTH;
-Canvas.gui.height = Settings.V_HEIGHT;
+Canvas.gui.width = MySettings.V_WIDTH;
+Canvas.gui.height = MySettings.V_HEIGHT;
 Context.gui = getWoCtx(Canvas.gui);
 
 Canvas.main = document.getElementById('main');
-Canvas.main.width = Settings.V_WIDTH;
-Canvas.main.height = Settings.V_HEIGHT;
+Canvas.main.width = MySettings.V_WIDTH;
+Canvas.main.height = MySettings.V_HEIGHT;
 Context.main = getWoCtx(Canvas.main);
 Canvas.main.hidden = false;
 Context.main.font = '48px serif';
 
 Canvas.bkgd = document.getElementById('bkgd');
-Canvas.bkgd.width = Settings.V_WIDTH;
-Canvas.bkgd.height = Settings.V_HEIGHT;
+Canvas.bkgd.width = MySettings.V_WIDTH;
+Canvas.bkgd.height = MySettings.V_HEIGHT;
 Context.bkgd = getWoCtx(Canvas.bkgd);
 
 export {Canvas, Context};

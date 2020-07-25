@@ -2,31 +2,34 @@
 import * as Engine from "/dev/engine/engine.js";
 
 import * as MainState from "./gamestate/mainstate.js";
+import * as FirstLoadState from "./gamestate/firstloadstate.js"
 
-import * as Settings from "./settings.js";
+import * as MyAssetLoader from "./myassetloader.js";
 
-var GameStateID = {
-    Menu: 1,
-    Main: 2
-}
+import * as MySettings from "./mysettings.js";
+
+
 
 //let mousedowntest = false;
 //Canvas.main.addEventListener("mousedown", function () { mousedowntest = true });
 //window.setTimeout(function () { mousedowntest = true; }, 1000);
 
-function addMyGameState(id, myGameState) {
+function addMyGameState(id, myGameState, cuu = true) {
     Engine.Startup.createGameState(id)
         .setUpdate(myGameState.update)
         .setRender(myGameState.render)
         .setOnExit(myGameState.onExit)
-        .setOnEnter(myGameState.onEnter);
+        .setOnEnter(myGameState.onEnter)
+        .setCatchUpUpdates(cuu);
 }
 
-addMyGameState(GameStateID.Main, MainState);
+addMyGameState(MySettings.GameStateID.Main, MainState);
+addMyGameState(MySettings.GameStateID.FirstLoad, FirstLoadState, false);
 
-let str = "./assets/images/";
-let assetsArr = [str + "sprites.png", str + "tileset.png", str + "props.png"];
-Engine.Startup.setAssetPaths(assetsArr);
-Engine.Startup.setStartingState(GameStateID.Main);
+
+
+//Engine.Startup.setAssetPaths(assetsArr);
+//Engine.Startup.setStartingState(GameStateID.Main);
+Engine.Startup.setStartingState(MySettings.GameStateID.FirstLoad)
 
 Engine.start();

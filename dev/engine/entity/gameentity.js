@@ -1,7 +1,7 @@
 
 import * as Hitbox from "./hitbox.js";
 import * as RenderComponent from "./render-component.js"
-import * as AssetLoader from "../main/assetloader.js";
+//import * as AssetLoader from "../main/assetloader.js";
 import * as KinematicComponent from "./kinematic-component.js";
 import * as InputComponent from "./input-component.js";
 //var idCounter = 0; //unique id for each gameentity

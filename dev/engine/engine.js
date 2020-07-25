@@ -22,12 +22,12 @@ import * as RenderComponent from "./entity/render-component.js";
 import * as KinematicComponent from "./entity/kinematic-component.js";
 import * as Hitbox from "./entity/hitbox.js";
 import * as GameEntity from "./entity/gameentity.js";
-import * as AssetLoader from "./main/assetloader.js";
+//import * as AssetLoader from "./main/assetloader.js";
 
 import * as Camera2D from "./main/camera2D.js";
 
 import * as GameState from "./main/gamestate.js";
-import * as ImageSection from "./main/image-section.js";
+import * as HTMLImageSection from "./main/htmlimage-section.js";
 import * as TileMapRenderer from "./main/tilemap-renderer.js";
 
 let documentLoaded = false;
@@ -43,8 +43,8 @@ document.addEventListener('DOMContentLoaded', function () { documentLoaded = tru
  */
 function start() {
     if (documentLoaded) {
-        //doc already loaded, continue
-        start2();
+        //doc already loaded (likely because user wrapped their code in a document ready statement), so continue
+        start2()
     } else {
         //doc hasn't loaded, wait till it has
         document.addEventListener('DOMContentLoaded', start2, false);
@@ -58,6 +58,9 @@ function hasStarted() {
 }
 function start2() {
     started = true;
+
+    Startup = null; //once game starts, Startup object shouldnt be able to be used;
+
     // if (CanvasManager.getNumCanvases === 0) {
     //     throw "need at least one canvas added to canvasmanager. call Startup.withCanvas";
     // }
@@ -67,35 +70,56 @@ function start2() {
         throw "Need at least one game state. Call Startup.createGameState(id) and use .set methods to set update, onenter, onexit";
     }
 
-    //lastly load assets.
-    //if this takes too long then maybe add a "AssetLoading" state in the beginning before the menu state.
+    // //CHANGED - user now handles all their own assets.
+    // //Directly start the loop now.
 
-    if (Array.isArray(assetNames) && typeof assetNames[0] === "string") {
+    // //lastly load assets.
+    // //if this takes too long then maybe add a "AssetLoading" state in the beginning before the menu state.
 
-        AssetLoader.loadAssets(assetNames, startLoop);
-    } else {
-        console.log("Warning: no assets")
-        startLoop();
-    }
+    // if (Array.isArray(assetNames) && typeof assetNames[0] === "string") {
+
+    //     AssetLoader.loadAssets(assetNames, startLoop);
+    // } else {
+    //     console.log("Warning: no assets")
+    //     startLoop();
+    // }
+
+    startLoop();
 }
 
+
+var now, dt, last, step, maxSeconds;
 function startLoop() {
-    var now,
-        dt = 0,
-        last = timestamp(),
-        step = Settings.STEP,
-        maxSeconds = 1;
+    //now,
+    dt = 0;
+    last = timestamp();
+    step = Settings.STEP;
+    maxSeconds = 1;
     //var pub = {};
     function frame() {
         //TODO pausing, loop still runs but ignore update and render
         now = timestamp();
 
         dt = dt + Math.min(maxSeconds, (now - last) / 1000);
-        while (dt > step) {
-            dt = dt - step;
-            UPDATE(); //if update takes really long (longer than ~17ms) then next loop it will execute it many times in a row.
+
+        //Update logic.
+        GameState.handleStateChange();
+        if (GameState.currentStateCatchUpUpdates()) {
+            //keep calling update to make up for lag
+            while (dt > step) {
+                dt = dt - step;
+                GameState.stepCurrentState();
+                //if step takes really long (longer than ~17ms) then next loop it will execute it many times in a row.
+            }
         }
-        RENDER();
+        else {
+            //1-to-1 update and drawing.
+            GameState.stepCurrentState();
+        }
+
+        //Graphics.
+        RENDER(); //caveat: will call RENDER() at the very beginning at least once, before it even calls UPDATE()...
+
         last = now;
         framesElapsed++;
         requestAnimationFrame(frame); //Aims for 60fps.
@@ -106,13 +130,13 @@ function startLoop() {
     requestAnimationFrame(frame);
 }
 
-function UPDATE() {
-    //MAKE STATES IMPLMEENTED BY THE USER\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    GameState.stepCurrentState();
-}
+// function UPDATE() {
+//     //debugger;
+
+// }
 
 function RENDER() {
-    //CanvasManager.clearCanvases();
+    //CanvasManager.clearCanvases(); //user controls when to clear.
     GameState.renderCurrentState();
     //RenderComponent.drawAll(); //a rendercomponent has an associated canvas so the context for drawing is handled in function
 
@@ -128,9 +152,7 @@ function getFramesElapsed() { return framesElapsed; }
 //     //return ConfigControl;
 // }
 let setAssetPaths = function (arr) {
-    if (hasStarted()) {
-        throw "can't";
-    }
+
     if (arr.constructor.name !== "Array" || arr[0] && typeof arr[0] !== "string") {
         throw "aint an array of strings";
     }
@@ -189,8 +211,8 @@ export {
     Startup,
     State,
     Entity,
-    ImageSection,
+    HTMLImageSection,
     Camera2D,
-
+    //AssetLoader,
     TileMapRenderer
 }

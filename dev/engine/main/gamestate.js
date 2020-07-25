@@ -7,6 +7,8 @@ function GameState() {
     this.onEnter = null;
     this.onExit = null;
 
+    this._catchUpUpdates = true;
+
 }
 // GameState.prototype.update = function() {
 
@@ -29,9 +31,10 @@ let queuedState = null;
  * @param {Number} id 
  */
 function createGameState(id) {
-    if (Engine.hasStarted()) {
-        throw "game already started can't make state";
+    if (typeof id !== "number") {
+        throw "BRUH";
     }
+
     let gs = new GameState();
     gsArr[id] = gs;
     currentState = gs;
@@ -39,9 +42,7 @@ function createGameState(id) {
 }
 
 function setStartingState(id) {
-    if (Engine.hasStarted()) {
-        throw "game already started can't make state";
-    }
+
     if (!gsArr[id]) {
         throw "state isn't in system";
     }
@@ -55,32 +56,31 @@ function setStartingState(id) {
  * @param {Function} func 
  */
 GameState.prototype.setUpdate = function (func) {
-    if (Engine.hasStarted()) {
-        throw "game already started can't modify state";
-    }
     this._update = func;
     return this;
 }
 GameState.prototype.setRender = function (func) {
-    if (Engine.hasStarted()) {
-        throw "game already started can't modify state";
-    }
     this._render = func;
     this.clearEveryFrame = true;
     return this;
 }
 GameState.prototype.setOnEnter = function (func) {
-    if (Engine.hasStarted()) {
-        throw "game already started can't modify state";
-    }
     this._onEnter = func;
     return this;
 }
 GameState.prototype.setOnExit = function (func) {
-    if (Engine.hasStarted()) {
-        throw "game already started can't modify state";
-    }
     this._onExit = func;
+    return this;
+}
+/**
+ * Sets whether the current gamestate allows for update to be called multiple times if there's a large enough lag spike.
+ * Default is true. Typically set this to false for "loading" screens.
+ */
+GameState.prototype.setCatchUpUpdates = function(bool) {
+    if (typeof bool !== "boolean") {
+        throw "BRU";
+    }
+    this._catchUpUpdates = bool;
     return this;
 }
 
@@ -103,9 +103,10 @@ GameState.prototype.setOnExit = function (func) {
 
 let veryFirstStateDone = false;
 /**
- * Calls update on the current state. Before that, it handles a state change if one was queued.
+ * Handles a state change if one was queued. (calls enter on new, exit on old)
+ * The very first game state will still have onEnter called.
  */
-function stepCurrentState() {
+function handleStateChange() {
     if (!veryFirstStateDone) {
         currentState._onEnter(null);
         veryFirstStateDone = true;
@@ -124,6 +125,13 @@ function stepCurrentState() {
         }
         queuedState = null;
     }
+}
+
+/**
+ * Calls update on the current state. 
+ */
+function stepCurrentState() {
+    
 
     if (currentState._update) {
         currentState._update();
@@ -134,6 +142,14 @@ function renderCurrentState() {
     if (currentState._render) {
         currentState._render();
     }
+}
+
+/**
+ * Returns whether the current gamestate allows for update to be called multiple times if there's a large enough lag spike.
+ * 
+ */
+function currentStateCatchUpUpdates() {
+    return currentState._catchUpUpdates;
 }
 
 /**
@@ -160,4 +176,5 @@ function getNumStates() {
 
 
 
-export { createGameState, queueState, stepCurrentState, renderCurrentState, getNumStates, setStartingState }
+export { createGameState, queueState, stepCurrentState, renderCurrentState,
+    getNumStates, setStartingState, handleStateChange, currentStateCatchUpUpdates }
