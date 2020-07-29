@@ -1,6 +1,6 @@
 /*
 sometimes you use images packed into one.
-this is to define sections of the large packed HTML image, as x,y,w,h bounds.
+this is to define sections of the large packed HTML image, as x,y,w,h bounds. So it's a htmlimstageelement with associated bounds.
 Must be an HTMLImageElement! The user needs to pass in a reference to the HTML image.
 */
 

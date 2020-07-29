@@ -47,8 +47,7 @@ RenderComponent.prototype.draw = function () {
     // let canvasData = CanvasManager.getCanvasData(this.canvasID);
     //debugger;
     let zoom = Settings.ZOOM;
-    let destX = Math.round((this.entityRef.x - this.getWidth() / 2 - this.offsetX - this.camera.getExactX()) * zoom);
-    let destY = Math.round((this.entityRef.y - this.getHeight() / 2 - this.offsetY - this.camera.getExactY()) * zoom);
+
     // let cam = canvasData.settings.camera;
     // if (!AssetLoader.getAsset(this.imageSection.imgFileName)) {
     //     throw "can't draw asset isn't loaded lmao";
@@ -62,6 +61,8 @@ RenderComponent.prototype.draw = function () {
 
     if (this.camera) {
         //if canvas has a 2d camera, draw relative to the camera's pos
+        let destX = Math.round((this.entityRef.getX() - this.getWidth() / 2 - this.offsetX - this.camera.getExactX()) * zoom);
+        let destY = Math.round((this.entityRef.getY() - this.getHeight() / 2 - this.offsetY - this.camera.getExactY()) * zoom);
 
         this.ctx.drawImage(this.imageSection.image,
             sx, sy, sw, sh,
@@ -74,8 +75,8 @@ RenderComponent.prototype.draw = function () {
         //no camera, just draw absolute position
         this.ctx.drawImage(this.imageSection.image,
             sx, sy, sw, sh,
-            Math.round((this.entityRef.x - this.getWidth() / 2 - this.offsetX) * zoom),
-            Math.round((this.entityRef.y - this.getHeight() / 2 - this.offsetY) * zoom),
+            Math.round((this.entityRef.getX() - this.getWidth() / 2 - this.offsetX) * zoom),
+            Math.round((this.entityRef.getY() - this.getHeight() / 2 - this.offsetY) * zoom),
             dw, dh
         );
     }

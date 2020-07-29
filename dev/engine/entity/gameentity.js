@@ -1,10 +1,12 @@
 
-import * as Hitbox from "./hitbox.js";
+//import * as Hitbox from "./hitbox.js";
 import * as RenderComponent from "./render-component.js"
 //import * as AssetLoader from "../main/assetloader.js";
-import * as KinematicComponent from "./kinematic-component.js";
+//import * as KinematicComponent from "./kinematic-component.js";
 import * as InputComponent from "./input-component.js";
+import * as Behavior from "./behavior.js";
 //var idCounter = 0; //unique id for each gameentity
+import * as PhysicsComponent from "./physics-component.js";
 
 /**
    * DO NOT CALL THIS CONTRUCTOR FROM OTHER FILE
@@ -16,77 +18,111 @@ import * as InputComponent from "./input-component.js";
   * 
    */
 function GameEntity(x, y) {
-    this.x = x;
-    this.y = y;
+    this._x = x;
+    this._y = y;
 
-    this.hitbox = null;
+    //this.hitbox = null;
     this.renderComponent = null;
-    this.kinematicComponent = null;
+    //this.kinematicComponent = null;
     this.inputComponent = null;
-    this.customBehavior = null;
+    this.behavior = null;
+
+    this.physicsComponent = null;
 }
+GameEntity.prototype.getX = function () { return this._x; }
+GameEntity.prototype.getY = function () { return this._y; }
 
-
+/**
+ * asdf
+ * @param {*} x 
+ * @param {*} y 
+ */
 function createEntity(x, y) {
     let ge = new GameEntity(x, y);
     return ge;
 }
-GameEntity.prototype.withRectActorHitbox = function (w, h, category, offX, offY) {
-    let hit = Hitbox.createRectActorHitbox(this, offX, offY, w, h, false, category);
-    this.hitbox = hit;
-    return this;
-}
-GameEntity.prototype.withRectHitbox = function (rectHitbox) {
-    if (rectHitbox.constructor.name !== "Hitbox") {
-        throw "withRectHitbox() must have Hitbox passed in";
-    }
-    if (rectHitbox.shape.constructor.name !== "RectangleShape") {
-        throw "w";
-    }
-    this.hitbox = rectHitbox;
-}
+// GameEntity.prototype.withRectActorHitbox = function (w, h, category, offX, offY) {
+//     let hit = Hitbox.createRectActorHitbox(this, offX, offY, w, h, false, category);
+//     this.hitbox = hit;
+//     return this;
+// }
+// GameEntity.prototype.withRectHitbox = function (rectHitbox) {
+//     if (rectHitbox.constructor.name !== "Hitbox") {
+//         throw "withRectHitbox() must have Hitbox passed in";
+//     }
+//     if (rectHitbox.shape.constructor.name !== "RectangleShape") {
+//         throw "w";
+//     }
+//     this.hitbox = rectHitbox;
+// }
 GameEntity.prototype.withRenderComponent = function (ctx, imageSection, camera, offsetX, offsetY) {
     let rc = RenderComponent.createRenderComponent(this, ctx, imageSection, camera, offsetX, offsetY);
     this.renderComponent = rc;
     return this;
 
 }
-GameEntity.prototype.withKinematicComponent = function () {
-    let kc = KinematicComponent.createKinematicComponent(this);
-    this.kinematicComponent = kc;
+
+GameEntity.prototype.withPhysicsComponent = function (physicsOptions) {
+    if (!physicsOptions) {
+        throw "br";
+    }
+    let pc = PhysicsComponent.addPhysicsComponent(this, physicsOptions);
+    this.physicsComponent = pc;
     return this;
 }
-/**
- * Makes this gameentity respond to key events. A Set of keys down is sent as the argument to the callback. (0 isn't a key)
- * @param {Function} callback 
+// GameEntity.prototype.withKinematicComponent = function () {
+//     let kc = KinematicComponent.createKinematicComponent(this);
+//     this.kinematicComponent = kc;
+//     return this;
+// }
+/*
+* Makes this gameentity respond to key events. Two Sets: keys down and keys just down, are sent as 1st and 2nd argument to the callback.
  */
 GameEntity.prototype.withInputComponent = function (callback) {
     let ic = InputComponent.createInputComponent().setKeyListener(callback);
     this.inputComponent = ic;
     return this;
 }
-GameEntity.prototype.withBehavior = function () {
-    // TODO general scripting that runs every frame
+GameEntity.prototype.withBehavior = function (func) {
+    // general scripting that runs every frame
+    let bc = Behavior.addBehavior(func);
+    this.behavior = bc;
+    return this;
 }
 
-
+/**
+ * removes all components of the game entity from their respective data structures.
+ * if entity wasn't in there in the first place then this function does nothing.
+ */
 GameEntity.prototype.remove = function () {
-    //TODO clean remove that disposes all components
 
     //Nothing actually stores the GameEntity! in the engine at least. the user can still obviously store it so they ca nremove it later
     //It's only its components that are stored in their respective data structures.
-    if (this.hitbox) {
-        this.hitbox.remove();
-    }
+    // if (this.hitbox) {
+    //     this.hitbox.remove();
+    // }
     if (this.renderComponent) {
         this.renderComponent.remove();
     }
-    if (this.kinematicComponent) {
-        this.kinematicComponent.remove();
-    }
+    // if (this.kinematicComponent) {
+    //     this.kinematicComponent.remove();
+    // }
     if (this.inputComponent) {
         this.inputComponent.remove();
     }
+    if (this.physicsComponent) {
+        this.physicsComponent.remove();
+    }
+    if (this.behavior) {
+        //this is probably what the rest of the component should be but whatever
+        Behavior.remove(this.behavior);
+    }
+
+    console.log("REMOVED " + this.constructor.name);
+}
+
+GameEntity.prototype.queueDelayedRemove = function () {
+    //TODO same as remove, but done at the end of the tick. 
 }
 
 // GameEntity.prototype.fields = function(obj) {

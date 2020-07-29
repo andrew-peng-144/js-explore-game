@@ -19,8 +19,9 @@ call pause() if needed, and resume() ?
 import * as Settings from "./settings.js";
 import * as InputComponent from "./entity/input-component.js";
 import * as RenderComponent from "./entity/render-component.js";
-import * as KinematicComponent from "./entity/kinematic-component.js";
-import * as Hitbox from "./entity/hitbox.js";
+//import * as KinematicComponent from "./entity/kinematic-component.js";
+//import * as Hitbox from "./entity/hitbox.js";
+import * as PhysicsComponent from "./entity/physics-component.js";
 import * as GameEntity from "./entity/gameentity.js";
 //import * as AssetLoader from "./main/assetloader.js";
 
@@ -97,7 +98,7 @@ function startLoop() {
     maxSeconds = 1;
     //var pub = {};
     function frame() {
-        //TODO pausing, loop still runs but ignore update and render
+        //TODO pausing, loop still runs but ignore update and render. For now, this is just "entity pausing" handled by user in their main state. Good for now
         now = timestamp();
 
         dt = dt + Math.min(maxSeconds, (now - last) / 1000);
@@ -186,9 +187,12 @@ let Startup = {
 let Entity = {
     createEntity: GameEntity.createEntity,
     updateInputComponents: InputComponent.updateAll,
-    updateKinematicComponents: KinematicComponent.updateAll,
-    handleHitboxCollisions: Hitbox.checkForCollisions,
-    drawRenderComponents: RenderComponent.drawAll
+    //updateKinematicComponents: KinematicComponent.updateAll,
+    //handleHitboxCollisions: Hitbox.checkForCollisions,
+    drawRenderComponents: RenderComponent.drawAll,
+    updatePhysics: PhysicsComponent.updateAll,
+
+    newPhysicsOptions: PhysicsComponent.newOptions,
 }
 
 /**
@@ -199,6 +203,7 @@ let State = {
 
 }
 
+let ZOOM = Settings.ZOOM;
 
 
 //let createGameState = GameState.createGameState;
@@ -214,5 +219,6 @@ export {
     HTMLImageSection,
     Camera2D,
     //AssetLoader,
-    TileMapRenderer
+    TileMapRenderer,
+    ZOOM
 }

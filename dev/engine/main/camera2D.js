@@ -11,10 +11,10 @@ Camera2D.prototype.getExactX = function () {
 Camera2D.prototype.getExactY = function () {
     return this._exactY;
 }
-Camera2D.prototype.getX = function () {
+Camera2D.prototype.getRoundedX = function () {
     return Math.round(this._exactX);
 }
-Camera2D.prototype.getY = function () {
+Camera2D.prototype.getRoundedY = function () {
     return Math.round(this._exactY);
 }
 /**

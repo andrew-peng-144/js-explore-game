@@ -1,34 +1,24 @@
 //not done f.
-import * as Hitbox from "../engine/hitbox.js";
-import { Camera } from "./camera.js";
-import { ZOOM } from "../globals.js";
-function drawHitboxes(context) {
+import * as Engine from "../../engine/engine.js";
+import * as DEBUG_PhysicsComponent from "../../engine/entity/physics-component.js";
+function drawHitboxes(context, camera) {
     context.save();
-    /**@type {Hitbox.Hitbox} */
-    var h,
-        i;
+    var hitboxes,
+        i, zoom = Engine.ZOOM;
 
-    for (i = 0; i < Hitbox.hitboxList.length; i++) {
-        var h = Hitbox.hitboxList[i];
-        context.fillStyle = (function () {
-            switch (h.category) {
-                case Hitbox.Category.BLOCK:
-                    return 'rgba(20,20,200,0.4)';
-                case Hitbox.Category.FRIENDLY_PROJECTILE:
-                    return 'rgba(20,200,20,0.4)';
-                default:
-                    return 'rgba(154,137,243,0.4)';
-            }
-        })();
-
-        //draw RECTS
-        Hitbox.hitboxList.forEach(h => {
-            if (h.shape.constructor.name === "RectangleShape") {
+        let pcList = DEBUG_PhysicsComponent.DEBUG_physicsComps;
+    context.fillStyle = 'rgba(154,137,243,0.8)';
+    for (i = 0; i < pcList.length; i++) {
+        hitboxes = pcList[i]._opts._hitboxes;
+        hitboxes.forEach(h => {
+            //draw RECTS
+            if (h.constructor.name === "RectangleHitbox") {
+                //debugger;
                 context.fillRect(
-                    (h.entityRef.x - h.shape.width/2 - h.offX - Camera.getExactX()) * ZOOM, //TODO not accounting for the hitbox offset, which idk what pos/neg offset actually is anyways
-                    (h.entityRef.y - h.shape.height/2 - h.offY - Camera.getExactY()) * ZOOM,
-                    h.shape.width * ZOOM,
-                    h.shape.height * ZOOM
+                    (pcList[i].entityRef.getX() - h.width / 2 - h.xOff - camera.getExactX()) * zoom, //TODO not accounting for the hitbox offset, which idk what pos/neg offset actually is anyways
+                    (pcList[i].entityRef.getY() - h.height / 2 - h.yOff - camera.getExactY()) * zoom,
+                    h.width * zoom,
+                    h.height * zoom
                 );
             }
         });

@@ -10,12 +10,20 @@ var initializedKeyListener = false;
  */
 var inputComponents = new Set();
 
+/**
+ * Do not change this.
+ * data structure holding integers of keys down.
+ * This can either be read from directly, or read as a parameter in the InputComponent keylistener.
+ * 
+ */
 var keysDown = new Set();
+
+var keysJustDown = new Set();
 let curr = 0;
 
 /**
  * The first time this method is called it will add a keydown and keyup listener to the document.
- * Makes this gameentity respond to key events. A Set of keys down is sent as the argument to the callback. (0 isn't a key)
+ * Makes this gameentity respond to key events. Two Sets: keys down and keys just down, are sent as 1st and 2nd argument to the callback.
  */
 InputComponent.prototype.setKeyListener = function (callback) {
     if (!initializedKeyListener) {
@@ -25,7 +33,11 @@ InputComponent.prototype.setKeyListener = function (callback) {
             //     return;
             // }
             //debugger;
-            keysDown.add(ev.keyCode);
+
+            if (!keysDown.has(ev.keyCode)) {
+                keysDown.add(ev.keyCode);
+                keysJustDown.add(ev.keyCode);
+            }
         });
         document.addEventListener("keyup", function (ev) {
             // let index = keysDown.indexOf(ev.keyCode);
@@ -63,7 +75,7 @@ function createInputComponent() {
 function updateAll() {
     inputComponents.forEach(ic => {
         if (ic.callback) {
-            ic.callback(keysDown); //execute the callback, passing in list of keys down
+            ic.callback(keysDown, keysJustDown); //execute the callback, passing in list of keys down
         }
     });
 
@@ -71,6 +83,7 @@ function updateAll() {
     // for (let i = 0; i < keysDownThisFrame.length; i++) {
     //     keysDownThisFrame[i] = 0;
     // }
+    keysJustDown.clear();
 
 }
 

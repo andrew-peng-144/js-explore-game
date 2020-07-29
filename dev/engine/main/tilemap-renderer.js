@@ -112,8 +112,8 @@ function renderVisibleTiles() {
                         Math.floor((id - 1) / tilesetTWidth) * TILE_SIZE,
                         TILE_SIZE,
                         TILE_SIZE,
-                        (x * TILE_SIZE - camera.getX()) * ZOOM,
-                        (y * TILE_SIZE - camera.getY()) * ZOOM,
+                        Math.round(((x * TILE_SIZE) - camera.getExactX()) * ZOOM),
+                        Math.round(((y * TILE_SIZE) - camera.getExactY()) * ZOOM),
                         TILE_SIZE * ZOOM,
                         TILE_SIZE * ZOOM);
 
