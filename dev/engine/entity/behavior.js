@@ -5,6 +5,7 @@ let behaviorSet = new Set();
 
 function addBehavior(func) {
     behaviorSet.add(func);
+    return func;
 }
 function updateAll() {
     behaviorSet.forEach(b => {
@@ -15,4 +16,8 @@ function remove(func) {
     behaviorSet.delete(func);
 }
 
-export {addBehavior, updateAll};
+function getCount() {
+    return behaviorSet.size;
+}
+
+export {addBehavior, updateAll, getCount, remove};

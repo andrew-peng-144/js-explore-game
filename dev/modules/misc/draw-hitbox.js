@@ -6,22 +6,14 @@ function drawHitboxes(context, camera) {
     var hitboxes,
         i, zoom = Engine.ZOOM;
 
-        let pcList = DEBUG_PhysicsComponent.DEBUG_physicsComps;
-    context.fillStyle = 'rgba(154,137,243,0.8)';
-    for (i = 0; i < pcList.length; i++) {
-        hitboxes = pcList[i]._opts._hitboxes;
-        hitboxes.forEach(h => {
-            //draw RECTS
-            if (h.constructor.name === "RectangleHitbox") {
-                //debugger;
-                context.fillRect(
-                    (pcList[i].entityRef.getX() - h.width / 2 - h.xOff - camera.getExactX()) * zoom, //TODO not accounting for the hitbox offset, which idk what pos/neg offset actually is anyways
-                    (pcList[i].entityRef.getY() - h.height / 2 - h.yOff - camera.getExactY()) * zoom,
-                    h.width * zoom,
-                    h.height * zoom
-                );
-            }
-        });
+    let kpcList = DEBUG_PhysicsComponent.DEBUG_KPCs;
+    let spcList = DEBUG_PhysicsComponent.DEBUG_SPCs;
+
+    for (i = 0; i < kpcList.length; i++) {
+        drawHitboxesOfPC(context, kpcList[i], 'rgba(154,137,243,0.8)', camera, zoom);
+    }
+    for (i = 0; i < spcList.length; i++) {
+        drawHitboxesOfPC(context, spcList[i], 'rgba(154,137,0,0.8)', camera, zoom);
 
         //below is for drawing polygonz.
 
@@ -48,6 +40,22 @@ function drawHitboxes(context, camera) {
         // }
     }
     context.restore();
+}
+
+function drawHitboxesOfPC(context, pc, color, camera, zoom) {
+    context.fillStyle = color;
+    pc._opts._hitboxes.forEach(h => {
+        //draw RECTS
+        if (h.constructor.name === "RectangleHitbox") {
+            //debugger;
+            context.fillRect(
+                (pc.entityRef.getX() - h.width / 2 - h.xOff - camera.getExactX()) * zoom, //TODO not accounting for the hitbox offset, which idk what pos/neg offset actually is anyways
+                (pc.entityRef.getY() - h.height / 2 - h.yOff - camera.getExactY()) * zoom,
+                h.width * zoom,
+                h.height * zoom
+            );
+        }
+    });
 }
 
 export { drawHitboxes };

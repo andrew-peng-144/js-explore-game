@@ -102,12 +102,12 @@ var renderComponents = new Set();
  * 
  * @param {Number} offsetX the number of pixels that this image is offset (subtracted) from the center of the gameentity
  */
-function createRenderComponent(entityRef, ctx, imageSection, offsetX, offsetY) {
+function createRenderComponent(entityRef, ctx, imageSection, camera, offsetX, offsetY) {
     // if (AssetLoader.getNumAssets === 0) {
     //     throw "can't create render component if there's no assets loaded";
     // }
 
-    let rc = new RenderComponent(entityRef, ctx, imageSection, offsetX, offsetY);
+    let rc = new RenderComponent(entityRef, ctx, imageSection, camera, offsetX, offsetY);
     renderComponents.add(rc);
     return rc;
 }
@@ -115,4 +115,8 @@ function createRenderComponent(entityRef, ctx, imageSection, offsetX, offsetY) {
 var drawAll = function () {
     renderComponents.forEach(r => r.draw());
 }
-export { createRenderComponent, drawAll }
+
+function getCount() {
+    return renderComponents.size;
+}
+export { createRenderComponent, drawAll, getCount }

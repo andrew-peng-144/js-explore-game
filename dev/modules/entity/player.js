@@ -60,17 +60,57 @@ let speed = 0;
 let w, a, s, d, pi = Math.PI;
 
 let entity;
+
+
+
 let init = function (camera) {
     // Player.gameEntity = Engine.Entity.createEntity(50, 60)
     //     //.withRectActorHitbox(34.69, 52.345345, Hitbox.Category.PLAYER )
     //     .withRenderComponent(ImageDef.issToImageSection(ImageDef.imageStringSections.BLAZEN, MyAssetLoader.assets))
     //     //.withKinematicComponent();
+
+
+    function bulletTestControl(controller) {
+        controller.setDX(1);
+    }
+
+    let bulletLifetime = 1000; //frames
+
     entity = Engine.Entity.createEntity(50, 200)
-        .withInputComponent(function (keyset) {
-            w = keyset.has(KeyCode.W);
-            a = keyset.has(KeyCode.A);
-            s = keyset.has(KeyCode.S);
-            d = keyset.has(KeyCode.D);
+        .withInputComponent(function (keysDown, keysJust) {
+
+            if (keysDown.has(KeyCode.E)) {
+                //shoot test
+
+                let startFrames = Engine.getFramesElapsed();
+                let bul = Engine.Entity.createEntity(getEntityX(), getEntityY())
+                    .withPhysicsComponent(Engine.Entity.newPhysicsOptions()
+                        .addRectHitbox(100, 0, 5, 5, 1, false)
+                        .addRectHitbox(100, 10, 5, 5, 1, false)
+                        .setControlFunc(bulletTestControl)
+                        //.setOnCollideFunc((otherIndex, data) => { bul.queueDelayedRemove() })
+                        )
+                    .withRenderComponent(
+                        CanvasManager.Context.main,
+                        ImageDef.issToImageSection(ImageDef.imageStringSections.BLUE_ORB, MyAssetLoader.assets),
+                        camera)
+                    .withBehavior(
+                        () => {
+                            if (Engine.getFramesElapsed() - startFrames === bulletLifetime) {
+                                //console.log("REMOVE");
+                                bul.queueDelayedRemove();
+                            }
+                        }
+                    )
+
+
+            }
+
+
+            w = keysDown.has(KeyCode.W);
+            a = keysDown.has(KeyCode.A);
+            s = keysDown.has(KeyCode.S);
+            d = keysDown.has(KeyCode.D);
 
             if (w && a && s && d) { console.log('all'); speed = 0; return; }
             if (w && a) { dir = 5 * pi / 4; }
@@ -84,12 +124,15 @@ let init = function (camera) {
             else if (d) { dir = 2 * pi; }
             else { speed = 0; return; } //didnt move
 
+
+
+
             speed = maxSpeed;
 
 
         })
         .withPhysicsComponent(Engine.Entity.newPhysicsOptions()
-            .addRectHitbox(0, 0, 10, 10, true)
+            .addRectHitbox(0, 0, 10, 10, 0, true)
             .setCollisionDataFunc(function () { return "u hit the player lmfao"; })
             .setControlFunc(function (controller) {
 
@@ -97,7 +140,7 @@ let init = function (camera) {
                 controller.setDY(speed * Math.sin(dir));
             })
             .setOnCollideFunc(function (i, otherData) {
-                console.log("I am player and I bumped into someone's " + i + "th hitbox. Their message is: " + otherData);
+                //console.log("I am player and I bumped into someone's " + i + "th hitbox. Their message is: " + otherData);
             }))
         .withRenderComponent(
             CanvasManager.Context.main,

@@ -23,6 +23,7 @@ import * as RenderComponent from "./entity/render-component.js";
 //import * as Hitbox from "./entity/hitbox.js";
 import * as PhysicsComponent from "./entity/physics-component.js";
 import * as GameEntity from "./entity/gameentity.js";
+import * as Behavior from "./entity/behavior.js";
 //import * as AssetLoader from "./main/assetloader.js";
 
 import * as Camera2D from "./main/camera2D.js";
@@ -186,13 +187,20 @@ let Startup = {
  */
 let Entity = {
     createEntity: GameEntity.createEntity,
+    doQueuedRemoves: GameEntity.doQueuedRemoves,
     updateInputComponents: InputComponent.updateAll,
     //updateKinematicComponents: KinematicComponent.updateAll,
     //handleHitboxCollisions: Hitbox.checkForCollisions,
     drawRenderComponents: RenderComponent.drawAll,
     updatePhysics: PhysicsComponent.updateAll,
+    updateBehavior: Behavior.updateAll,
 
     newPhysicsOptions: PhysicsComponent.newOptions,
+
+    countPhysics: PhysicsComponent.getCount,
+    countRender: RenderComponent.getCount,
+    countInput: InputComponent.getCount,
+    countBehavior: Behavior.getCount,
 }
 
 /**

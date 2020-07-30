@@ -17,7 +17,6 @@ import * as DrawHitbox from "../misc/draw-hitbox.js";
 
 //lul
 let i = 0;
-let ent = null;
 let myCameraFixture;
 let cam;
 function onEnter(from) {
@@ -25,13 +24,7 @@ function onEnter(from) {
     console.log("entered mainstate from " + from);
     cam = Engine.Camera2D.createCamera2D();
 
-    ent = Engine.Entity.createEntity(30, 30)
-        .withRenderComponent(CM.Context.main,
-            ImageDef.issToImageSection(ImageDef.imageStringSections.LINKIN, MyAssetLoader.assets),
-            cam)
-        .withPhysicsComponent(Engine.Entity.newPhysicsOptions()
-            .addRectHitbox(0, 0, 50, 30, true)
-        );
+
 
     //create another one to test, but dont save ref
     // Engine.Entity.createEntity(50, 60)
@@ -76,30 +69,83 @@ function onEnter(from) {
     //out-of-engine pausing ???
     //all actors will freeze, and frame counter for this gamestate will pause too
     document.addEventListener("keydown", ev => {
-        if (ev.keyCode === KeyCode.P) {
-            paused = true;
+        if (ev.keyCode === KeyCode.P && !myPaused) {
+            myPaused = true;
+            CM.Context.main.fillText('ENTITIES PAUSED (R TO RESUME)', 50, 100);
         }
-        if (ev.keyCode === KeyCode.R) {
-            paused = false;
+        if (ev.keyCode === KeyCode.R && myPaused) {
+            myPaused = false;
         }
     });
 
+    lulw();
+
+}
+function lulw() {
+
+    Engine.Entity.createEntity(30, 30)
+        .withRenderComponent(CM.Context.main,
+            ImageDef.issToImageSection(ImageDef.imageStringSections.LINKIN, MyAssetLoader.assets),
+            cam)
+        .withPhysicsComponent(Engine.Entity.newPhysicsOptions()
+            .addRectHitbox(0, 0, 50, 30, 0, true)
+            .setOnCollideFunc((otherType, data) => {
+                console.log("Top was hit by type " + otherType + " and they have " + data);
+            })
+        );
+
+    Engine.Entity.createEntity(30, 50)
+        .withRenderComponent(CM.Context.main,
+            ImageDef.issToImageSection(ImageDef.imageStringSections.LINKIN, MyAssetLoader.assets),
+            cam)
+        .withPhysicsComponent(Engine.Entity.newPhysicsOptions()
+            .addRectHitbox(0, 0, 50, 30, 0, true)
+            .setOnCollideFunc((otherType, data) => {
+                console.log("Bot was hit by type " + otherType + " and they have " + data);
+            })
+        );
+
+    return;
+
+    let rand;
+    let ctl = function (controller) {
+        controller.setDX(rand * 0.2)
+        controller.setDY(rand * 0.2)
+    }
+    for (let i = 0; i < 10; i++) {
+        for (let j = 0; j < 2; j++) {
+            rand = Math.random();
+            Engine.Entity.createEntity(i * 10, j * 10)
+                .withPhysicsComponent(Engine.Entity.newPhysicsOptions()
+                    .addRectHitbox(0, 0, 10, 10, true)
+                    .setControlFunc(ctl)
+                )
+                .withRenderComponent(CM.Context.main,
+                    ImageDef.issToImageSection(ImageDef.imageStringSections.SMALLTREE, MyAssetLoader.assets),
+                    cam)
+                ;
+
+        }
+    }
 }
 function onExit(to) {
     console.log("exited mainstate, to " + to);
 }
 
 
-let paused = false;
+let myPaused = false;
 
 function update() {
-    if (paused) {
+    if (myPaused) {
         return;
     }
     Engine.Entity.updateInputComponents();
     //Engine.Entity.updateKinematicComponents();
     //Engine.Entity.handleHitboxCollisions();
     Engine.Entity.updatePhysics();
+
+    Engine.Entity.updateBehavior();
+    Engine.Entity.doQueuedRemoves();
 
 
     //console.log("LMFAO");
@@ -113,17 +159,25 @@ function update() {
     // }
 }
 function render() {
+    if (myPaused) {
+
+        return;
+    }
+
     CM.Context.main.clearRect(0, 0, MySettings.V_WIDTH, MySettings.V_HEIGHT);
 
-    if (paused) {
-        CM.Context.main.fillText('ENTITIES PAUSED', 10, 70);
-    }
     //CM.Context.main.fillRect(50, 50 + i, 60, 60);
     Engine.TileMapRenderer.renderVisibleTiles();
     Engine.Entity.drawRenderComponents();
 
     //CM.Context.main.fillText('MAIN STATE', 10, 50);
     DrawHitbox.drawHitboxes(CM.Context.main, cam);
+
+    CM.Context.main.fillText(
+        `physics: ${Engine.Entity.countPhysics()}
+        renders: ${Engine.Entity.countRender()}
+        inputs: ${Engine.Entity.countInput()}
+        behaviors: ${Engine.Entity.countBehavior()}`, 10, 70);
 }
 
 export { onEnter, onExit, update, render };

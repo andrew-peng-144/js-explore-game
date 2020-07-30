@@ -1,6 +1,7 @@
 <!doctype html>
 
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
 
@@ -8,7 +9,7 @@
   <meta name="description" content="op af">
   <meta name="author" content="Wow.">
 
-  
+
 
 </head>
 
@@ -16,17 +17,29 @@
   <!-- <script src='state-machine.js'></script> -->
   <script>
 
-      function Wow() {
-        this.a = "wow";
-      }
-      Wow.prototype.ke = function() {
-        this.b = "new";
-      }
+    function Wow() {
+      this.a = "wow";
+    }
+    Wow.prototype.ke = function () {
+      this.b = "new";
+    }
 
-      let a = new Wow();
-      let b = new Wow();
-      a.ke();
-      let c = new Wow();
+    let a = new Wow();
+    let b = new Wow();
+    a.ke();
+    let c = new Wow();
+
+
+    //wow.
+    let set1 = new Set();
+    set1.add(1234);
+    set1.add(2345);
+    set1.add(3456);
+    set1.forEach(s => {
+      set1.delete(2345);
+      //set1.clear();
+      console.log(s);
+    })
 
 
       //TEST:
@@ -44,17 +57,18 @@
       //More efficient array iteration:
       //"If you know that none of the elements in your array evaluate to false in a boolean context—if your array consists only of DOM nodes, for example—you can use a more efficient idiom:"
       //let divs = document.getElementsByTagName('div')
-      /*
-         for (let i = 0, div; div = divs[i]; i++) {
-           // Process div in some way 
-         }
-    */
+    /*
+       for (let i = 0, div; div = divs[i]; i++) {
+         // Process div in some way
+       }
+  */
          //OR JUST USE Array.prototype.forEach(): e.g. let colors = ['red', 'green', 'blue']; colors.forEach(color => console.log(color));
 
          //DONT USE FOR...IN LOOPS.
-         
+
          //USE join() to print arrays in a list.
 
   </script>
 </body>
+
 </html>

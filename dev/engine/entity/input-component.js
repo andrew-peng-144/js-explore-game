@@ -87,5 +87,8 @@ function updateAll() {
 
 }
 
+function getCount() {
+    return inputComponents.size;
+}
 
-export { createInputComponent, updateAll }
+export { createInputComponent, updateAll, getCount }

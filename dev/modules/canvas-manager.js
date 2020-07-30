@@ -21,7 +21,7 @@ Canvas.main.width = MySettings.V_WIDTH;
 Canvas.main.height = MySettings.V_HEIGHT;
 Context.main = getWoCtx(Canvas.main);
 Canvas.main.hidden = false;
-Context.main.font = '48px serif';
+Context.main.font = '12px serif';
 
 Canvas.bkgd = document.getElementById('bkgd');
 Canvas.bkgd.width = MySettings.V_WIDTH;

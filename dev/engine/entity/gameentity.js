@@ -18,7 +18,13 @@ import * as PhysicsComponent from "./physics-component.js";
   * 
    */
 function GameEntity(x, y) {
+    /**
+     * @private
+     */
     this._x = x;
+    /**
+     * @private
+     */
     this._y = y;
 
     //this.hitbox = null;
@@ -31,6 +37,12 @@ function GameEntity(x, y) {
 }
 GameEntity.prototype.getX = function () { return this._x; }
 GameEntity.prototype.getY = function () { return this._y; }
+GameEntity.prototype.setX = function (x) {
+    this._x = x;
+}
+GameEntity.prototype.setY = function (y) {
+    this._y = y;
+}
 
 /**
  * asdf
@@ -91,16 +103,18 @@ GameEntity.prototype.withBehavior = function (func) {
 }
 
 /**
- * removes all components of the game entity from their respective data structures.
+ * IMMEDIATELY removes all components of the game entity from their respective data structures.
  * if entity wasn't in there in the first place then this function does nothing.
  */
-GameEntity.prototype.remove = function () {
+GameEntity.prototype.removeNow = function () {
 
     //Nothing actually stores the GameEntity! in the engine at least. the user can still obviously store it so they ca nremove it later
     //It's only its components that are stored in their respective data structures.
     // if (this.hitbox) {
     //     this.hitbox.remove();
     // }
+    gameEntitiesToBeRemoved.delete(this); //to avoid the rare case of getting immediately removed mid-tick yet still in the queue.
+
     if (this.renderComponent) {
         this.renderComponent.remove();
     }
@@ -114,15 +128,28 @@ GameEntity.prototype.remove = function () {
         this.physicsComponent.remove();
     }
     if (this.behavior) {
-        //this is probably what the rest of the component should be but whatever
+        //this is probably how the rest of the components should be (static remove method) but whatever
         Behavior.remove(this.behavior);
     }
 
     console.log("REMOVED " + this.constructor.name);
 }
-
+var gameEntitiesToBeRemoved = new Set();
+/**
+ * // TODO
+ * Mark this gameEntity as "to be removed" and may add it to a list.
+ * Instead, fully remove all components from their respective lists/sets at the end
+ */
 GameEntity.prototype.queueDelayedRemove = function () {
-    //TODO same as remove, but done at the end of the tick. 
+    //same as remove, but only done when another function is called lul
+    gameEntitiesToBeRemoved.add(this);
+}
+
+function doQueuedRemoves() {
+    gameEntitiesToBeRemoved.forEach(e => {
+        e.removeNow();
+    });
+    gameEntitiesToBeRemoved.clear();
 }
 
 // GameEntity.prototype.fields = function(obj) {
@@ -134,7 +161,7 @@ GameEntity.prototype.queueDelayedRemove = function () {
 //     throw "LMFAO";
 // }
 
-//TODO animator...
+//TOO animator...
 // (function Animator() {
 //     var pub = {};
 //     var anims = [];
@@ -157,5 +184,5 @@ GameEntity.prototype.queueDelayedRemove = function () {
 // })();
 
 
-export { createEntity }
+export { createEntity, doQueuedRemoves }
 //export { newGenericEntity, newActorEntity, GameEntity };
