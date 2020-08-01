@@ -90,9 +90,11 @@ GameEntity.prototype.withPhysicsComponent = function (physicsOptions) {
 /*
 * Makes this gameentity respond to key events. Two Sets: keys down and keys just down, are sent as 1st and 2nd argument to the callback.
  */
-GameEntity.prototype.withInputComponent = function (callback) {
-    let ic = InputComponent.createInputComponent().setKeyListener(callback);
-    this.inputComponent = ic;
+GameEntity.prototype.withInputComponent = function (inputComponent) {
+    if (inputComponent.constructor.name !== "InputComponent") {
+        throw "rip";
+    }
+    this.inputComponent = inputComponent;
     return this;
 }
 GameEntity.prototype.withBehavior = function (func) {

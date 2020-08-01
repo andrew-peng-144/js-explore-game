@@ -197,6 +197,8 @@ let Entity = {
 
     newPhysicsOptions: PhysicsComponent.newOptions,
 
+    createInputComponent: InputComponent.createInputComponent, //TODO have these for the rest of the comps. cleaner.
+
     countPhysics: PhysicsComponent.getCount,
     countRender: RenderComponent.getCount,
     countInput: InputComponent.getCount,

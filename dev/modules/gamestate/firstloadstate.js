@@ -30,7 +30,7 @@ function update() {
     //if so, goto mainstate (goto menu for production)
     if (numLoaded === numAssets) {
         //done ni
-        Engine.State.queueState(MySettings.GameStateID.Main);
+        Engine.State.queueState(MySettings.GameStateID.LoadWorld);
     }
 }
 function render() {

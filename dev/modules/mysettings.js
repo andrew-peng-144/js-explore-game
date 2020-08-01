@@ -6,7 +6,7 @@ const RESOLUTIONS = {
     FHD: { w: 1920, h: 1080 },
     QHD: { w: 2560, h: 1440 }
 }
-var res = RESOLUTIONS.trash;
+var res = RESOLUTIONS.HD;
 /**
  * VIEWPORT/CANVAS width. The ACTUAL width.
  */
@@ -21,7 +21,8 @@ var V_HEIGHT = res.h;
 var GameStateID = {
     Menu: 1,
     Main: 2,
-    FirstLoad: 3
+    FirstLoad: 3,
+    LoadWorld: 4
 }
 
 export { TILE_SIZE, V_WIDTH, V_HEIGHT, GameStateID};

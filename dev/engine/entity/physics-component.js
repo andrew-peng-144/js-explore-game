@@ -108,7 +108,9 @@ function addPhysicsComponent(entityRef, physicsOptions) {
 // function newHitboxProperties() {
 
 // }
-function RectangleHitbox(xOff, yOff, width, height, type = 0, solid = false, zid = 0) {
+
+// TODO cleaner with a HitboxSettings class
+function RectangleHitbox(xOff, yOff, width, height, type = 0, solid = 0, zid = 0) {
     this.xOff = xOff;
     this.yOff = yOff;
     this.width = width;
@@ -125,7 +127,7 @@ function isRectHitbox(hitbox) {
         && typeof hitbox.yOff === "number"
         && typeof hitbox.width === "number"
         && typeof hitbox.height === "number"
-        && typeof hitbox.solid === "boolean"
+        && typeof hitbox.solid === "number"
         && typeof hitbox.zid === "number";
 }
 // function CircleHitbox(r) {
@@ -172,6 +174,7 @@ PhysicsOptions.prototype.setOnCollideFunc = function (func) {
  * 
  * @param {Function} func controller function, with "controller" passed in as 1st arg
  * use controller.setDX(num) and controller.setDY(num) to set displacement of this entity on this frame.
+ * Controllers DO NOT reset after every frame, so doing nothing will make it stay in direction!
  * If this function is called, it makes the hitbox assumed to be NOT STATIC! for now!
  */
 PhysicsOptions.prototype.setControlFunc = function (func) {
@@ -211,6 +214,19 @@ function PhysicsController() {
     this._dx = 0;
     this._dy = 0;
 }
+/**
+ * Get the DX that was set last frame, or the DX that was just set before this
+ */
+PhysicsController.prototype.getDX = function () {
+    return this._dx;
+}
+/**
+ * Get the DY that was set last frame, or the DY that was just set before this
+ */
+PhysicsController.prototype.getDY = function () {
+    return this._dy;
+}
+
 PhysicsController.prototype.setDX = function (dx) {
     this._dx = dx;
 }
@@ -240,9 +256,9 @@ function updateAll() {
         pc.entityRef.setX(pc.entityRef.getX() + pc._controller._dx);
         pc.entityRef.setY(pc.entityRef.getY() + pc._controller._dy);
 
-        //reset controller
-        pc._controller._dx = 0;
-        pc._controller._dy = 0;
+        // //reset controller
+        // pc._controller._dx = 0;
+        // pc._controller._dy = 0;
 
     });
 
@@ -347,7 +363,7 @@ function handleCollision(pcA, pcB) {
                 //static-kinematic case:
                 //A is kinematic and B is static.
                 if (pcB.isStatic()) {
-                    resolveRectSolidityStaticKine(
+                    resolveRectSolidity(
                         pcB.getWorldXTopLeft(hB_index),
                         pcB.getWorldYTopLeft(hB_index),
                         hitB.width,
@@ -359,8 +375,50 @@ function handleCollision(pcA, pcB) {
                         pcA
                     )
                 } else {
-                    //kine-kine case
-                    // TODO
+                    //kine-kine case:
+                    //move the FASTER one.
+                    //TODO this still doesn't work completely. Because _dx and _dy don't account for the solidity resolution,
+                    //a p.c. could have higher speed but if they ran directly into another solid,
+                    //slower pc then their true speed would be zero cuz standing still
+                    //To replicate: make a solid pc entity move slower than player, then move player directly against it. The solid pc entity still moves while player brushes against..
+                    
+                    //Temp solution: Just pick the one with higher "priority", so the higher number in their "solid" fields
+                    debugger;
+                    if
+                    // (pcA._controller._dx * pcA._controller._dx + pcA._controller._dy * pcA._controller._dy
+                    //     > pcB._controller._dx * pcB._controller._dx + pcB._controller._dy * pcB._controller._dy)
+                    (hitA.solid < hitB.solid)
+                         {
+                        //A is faster (yes theres a lot of repeated/similar code...)
+
+                        //actually A is lower solidity
+                        //MOVE A (same as static-kine case b/c B doesnt move)
+                        resolveRectSolidity(
+                            pcB.getWorldXTopLeft(hB_index),
+                            pcB.getWorldYTopLeft(hB_index),
+                            hitB.width,
+                            hitB.height,
+                            pcA.getWorldXTopLeft(hA_index),
+                            pcA.getWorldYTopLeft(hA_index),
+                            hitA.width,
+                            hitA.height,
+                            pcA
+                        )
+                    } else {
+                        //MOVE B
+                        //also goes here if solidities tie. Which it moves the one added later (?)
+                        resolveRectSolidity(
+                            pcA.getWorldXTopLeft(hA_index),
+                            pcA.getWorldYTopLeft(hA_index),
+                            hitA.width,
+                            hitA.height,
+                            pcB.getWorldXTopLeft(hB_index),
+                            pcB.getWorldYTopLeft(hB_index),
+                            hitB.width,
+                            hitB.height,
+                            pcB
+                        )
+                    }
                 }
 
             }
@@ -374,10 +432,12 @@ function handleCollision(pcA, pcB) {
     }
 }
 
-/** Params represent rectangles of the static (s) and kinematic (k)
- * @param {PhysicsComponent} kinematicPC pass the p.c. of the kine so this function can actually change its position.
+/** Params represent rectangles of the static or pc to not move (s) and kinematic/pc to move (k)
+ * @param {PhysicsComponent} kinematicPC pass the p.c. that you want to move so this function can actually change its position.
+ * 
+ * Prob wont work properly if trying to resolve two fast-moving kinematics
 */
-function resolveRectSolidityStaticKine(xs, ys, ws, hs, xk, yk, wk, hk, kinematicPC) {
+function resolveRectSolidity(xs, ys, ws, hs, xk, yk, wk, hk, kinematicPC) {
     //debugger;
     //if static is further right than kine, calculate intersection with kine's width, otherwise calculate it other way
     let intersectionX = xs > xk ? xs - (xk + wk) : (xs + ws) - xk;

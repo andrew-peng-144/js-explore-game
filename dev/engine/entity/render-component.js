@@ -1,8 +1,7 @@
 //Rip have this outsidfe of the engine.?
 //TODO add an option to make this based on world or based on screen. that way this can also be used for ui? bruh ui is on another canvas anyway tho. lol.
-//Also add a way to set the canvas. some rendercomponents may be on different canvases tha nothers. hav ea way to set a "default"
 
-//TODO TODO COMPONENTS CAN BE STORED AS A "SET" DATA STRUCTURE, IT IS FASTER THAN AN ARRAY FOR ADD/REMOVE/CONTAINS!
+//COMPONENTS CAN BE STORED AS A "SET" DATA STRUCTURE, IT IS FASTER THAN AN ARRAY FOR ADD/REMOVE/CONTAINS!
 //https://stackoverflow.com/questions/39007637/javascript-set-vs-array-performance
 
 import * as Settings from "../settings.js";

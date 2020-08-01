@@ -3,7 +3,6 @@ import * as Settings from "../settings.js";
 //import { TILE_SIZE, V_WIDTH, V_HEIGHT, STEP, ZOOM } from "../modules/globals.js"
 //import { Camera } from "./camera.js";
 
-//TODO a way to set the canvas (tat has a camera).
 //Renders the tiles!
 //May do optimizations later!
 //For now, it just picks the tiles that are within the screen bounds and only renders those!!
@@ -69,6 +68,10 @@ function settings() {
     return settingsObj;
 }
 
+function getCamera() {
+    return settingsObj.camera;
+}
+
 
 /**
  * @param {HTMLImageElement} tilesetImage an HTML image element of the TileSet.
@@ -123,4 +126,4 @@ function renderVisibleTiles() {
     }
 }
 
-export { renderVisibleTiles, settings };
+export { renderVisibleTiles, settings, getCamera };

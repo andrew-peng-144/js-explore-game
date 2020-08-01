@@ -21,9 +21,9 @@ let myCameraFixture;
 let cam;
 function onEnter(from) {
     i = 0;
-    console.log("entered mainstate from " + from);
-    cam = Engine.Camera2D.createCamera2D();
-
+    console.log("entered mainstate from LOL NAME ISNT STORED");
+    //cam = Engine.Camera2D.createCamera2D();
+    cam = Engine.TileMapRenderer.getCamera();
 
 
     //create another one to test, but dont save ref
@@ -47,23 +47,22 @@ function onEnter(from) {
     //     );
 
     //load map (costly) (synchronous for now)
-    ReadMapData.read("./assets/leveldata/testing3.json");
+    // ReadMapData.read("./assets/leveldata/testing3.json");
 
-    if (!ReadMapData.hasLoaded()) {
-        throw "wut";
-    }
+    // if (!ReadMapData.hasLoaded()) {
+    //     throw "wut";
+    // }
 
     //setup tilemap renderer
-    Engine.TileMapRenderer.settings()
-        .setCanvas(CM.Canvas.main)
-        .setCamera(cam)
-        .setMapArray(ReadMapData.getMapArray())
-        .setMapTWidth(ReadMapData.getMapWidthInTiles())
-        .setTilesetImage(MyAssetLoader.getAsset("./assets/images/tileset.png"))
-        .setTilesize(16);
+    // Engine.TileMapRenderer.settings()
+    //     .setCanvas(CM.Canvas.main)
+    //     .setCamera(cam)
+    //     .setMapArray(ReadMapData.getMapArray())
+    //     .setMapTWidth(ReadMapData.getMapWidthInTiles())
+    //     .setTilesetImage(MyAssetLoader.getAsset("./assets/images/tileset.png"))
+    //     .setTilesize(16);
 
-    //player init
-    Player.init(cam);
+ 
 
 
     //out-of-engine pausing ???
@@ -81,14 +80,20 @@ function onEnter(from) {
     lulw();
 
 }
+
+let mousePos;
 function lulw() {
+    Engine.Entity.createEntity(0, 0)
+        .withInputComponent(Engine.Entity.createInputComponent()
+            .setMouseCallback(CM.Canvas.main, pos => { mousePos = pos })
+        );
 
     Engine.Entity.createEntity(30, 30)
         .withRenderComponent(CM.Context.main,
             ImageDef.issToImageSection(ImageDef.imageStringSections.LINKIN, MyAssetLoader.assets),
             cam)
         .withPhysicsComponent(Engine.Entity.newPhysicsOptions()
-            .addRectHitbox(0, 0, 50, 30, 0, true)
+            .addRectHitbox(0, 0, 50, 30, 0, 1)
             .setOnCollideFunc((otherType, data) => {
                 console.log("Top was hit by type " + otherType + " and they have " + data);
             })
@@ -99,9 +104,12 @@ function lulw() {
             ImageDef.issToImageSection(ImageDef.imageStringSections.LINKIN, MyAssetLoader.assets),
             cam)
         .withPhysicsComponent(Engine.Entity.newPhysicsOptions()
-            .addRectHitbox(0, 0, 50, 30, 0, true)
+            .addRectHitbox(0, 0, 50, 30, 0, 2)
             .setOnCollideFunc((otherType, data) => {
                 console.log("Bot was hit by type " + otherType + " and they have " + data);
+            })
+            .setControlFunc(ctr => {
+                ctr.setDX(0.2);
             })
         );
 
@@ -177,7 +185,9 @@ function render() {
         `physics: ${Engine.Entity.countPhysics()}
         renders: ${Engine.Entity.countRender()}
         inputs: ${Engine.Entity.countInput()}
-        behaviors: ${Engine.Entity.countBehavior()}`, 10, 70);
+        behaviors: ${Engine.Entity.countBehavior()}
+        
+        MOUSE: ${JSON.stringify(mousePos)}`, 10, 70);
 }
 
 export { onEnter, onExit, update, render };
