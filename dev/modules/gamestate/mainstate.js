@@ -62,7 +62,7 @@ function onEnter(from) {
     //     .setTilesetImage(MyAssetLoader.getAsset("./assets/images/tileset.png"))
     //     .setTilesize(16);
 
- 
+
 
 
     //out-of-engine pausing ???
@@ -83,15 +83,17 @@ function onEnter(from) {
 
 let mousePos;
 function lulw() {
+
     Engine.Entity.createEntity(0, 0)
-        .withInputComponent(Engine.Entity.createInputComponent()
+        .withInputComponent(Engine.Entity.InputComponent.createInputComponent()
             .setMouseCallback(CM.Canvas.main, pos => { mousePos = pos })
         );
 
+    return;
+
     Engine.Entity.createEntity(30, 30)
-        .withRenderComponent(CM.Context.main,
-            ImageDef.issToImageSection(ImageDef.imageStringSections.LINKIN, MyAssetLoader.assets),
-            cam)
+        .withRenderComponent(Engine.Entity.RenderComponent.createRenderComponent()
+            , IDKKKKKKKKKKKKKKKKK)
         .withPhysicsComponent(Engine.Entity.newPhysicsOptions()
             .addRectHitbox(0, 0, 50, 30, 0, 1)
             .setOnCollideFunc((otherType, data) => {
@@ -147,14 +149,7 @@ function update() {
     if (myPaused) {
         return;
     }
-    Engine.Entity.updateInputComponents();
-    //Engine.Entity.updateKinematicComponents();
-    //Engine.Entity.handleHitboxCollisions();
-    Engine.Entity.updatePhysics();
-
-    Engine.Entity.updateBehavior();
-    Engine.Entity.doQueuedRemoves();
-
+    Engine.Entity.updateAll();
 
     //console.log("LMFAO");
     i++;
@@ -176,16 +171,16 @@ function render() {
 
     //CM.Context.main.fillRect(50, 50 + i, 60, 60);
     Engine.TileMapRenderer.renderVisibleTiles();
-    Engine.Entity.drawRenderComponents();
+    Engine.Entity.drawAll();
 
     //CM.Context.main.fillText('MAIN STATE', 10, 50);
     DrawHitbox.drawHitboxes(CM.Context.main, cam);
 
     CM.Context.main.fillText(
-        `physics: ${Engine.Entity.countPhysics()}
-        renders: ${Engine.Entity.countRender()}
-        inputs: ${Engine.Entity.countInput()}
-        behaviors: ${Engine.Entity.countBehavior()}
+        `physics: ${Engine.Entity.PhysicsComponent.getCount()}
+        renders: ${Engine.Entity.RenderComponent.getCount()}
+        inputs: ${Engine.Entity.InputComponent.getCount()}
+        behaviors: ${Engine.Entity.Behavior.getCount()}
         
         MOUSE: ${JSON.stringify(mousePos)}`, 10, 70);
 }

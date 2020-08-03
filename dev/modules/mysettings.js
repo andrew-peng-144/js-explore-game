@@ -6,7 +6,7 @@ const RESOLUTIONS = {
     FHD: { w: 1920, h: 1080 },
     QHD: { w: 2560, h: 1440 }
 }
-var res = RESOLUTIONS.HD;
+var res = RESOLUTIONS.trash;
 /**
  * VIEWPORT/CANVAS width. The ACTUAL width.
  */

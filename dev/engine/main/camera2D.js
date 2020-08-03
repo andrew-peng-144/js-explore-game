@@ -54,4 +54,5 @@ Camera2D.prototype.setPosition = function (x, y) {
 function createCamera2D() {
     return new Camera2D();
 }
+
 export { createCamera2D };

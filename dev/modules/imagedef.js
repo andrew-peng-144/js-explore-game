@@ -1,8 +1,8 @@
 import * as Engine from "../engine/engine.js";
 //Defines a STRING PATH, and associated SLICE DATA.
-//purely declaratory, no procedural stuff.
 //The declarations are for use with the Engine's HTMLImageSlice.
 //Which is exactly the same as this except it's the actual html image object instead of the string path.
+//So at some point during initialization but after assets are loaded, convert all to HTMLImageSlices.
 
 let TILE_SIZE = 16;
 function wow(imgName, sxt, syt, swt = 1, sht = 1) {
@@ -52,14 +52,14 @@ var imageStringSections = {
     // WALKING_TEST: newAnimatedImage(s, 2, 4, 0, 13, 1, 2),
     // WALKING_LEFT_TEST: newAnimatedImage(s, 6, 4, 0, 13, 1, 2),
     // WALKING_RIGHT_TEST: newAnimatedImage(s, 2, 4, 2, 13, 1, 2),
-    // WALKING_DOWN_TEST: newAnimatedImage(s, 6, 4, 2, 13, 1, 2)
+    NPC1_WALKING_SOUTH: awow(s, 4, 2, 0, 1, 2)
 };
 
 /**
  * RETURNS a HTMLImageSection (from Engine) given the imageStringSection.
  * The HTML image element is specified by the second arg of this function
  * @param {idk} imageStringSection iss. defined in this file (have the asdfwow property lmao)
- * @param {Object} assets An object mapping String -> HTMLImageElement. The Strings are the full path to image.
+ * 
  */
 function issToImageSection(imageStringSection, assets) {
     if (imageStringSection.asdfwow !== "WOW") {
@@ -88,4 +88,34 @@ function issToImageSection(imageStringSection, assets) {
 
 }
 
-export { issToImageSection, imageStringSections }
+var converted = false;
+//var assetsRef = null;
+
+/**
+ * Converts the namespace of iss's values to HTMLImageSections.
+ * Enables usage of section() to get the namespace from anywhere
+ * @param {Object} assets REQUIRED: An object mapping String -> HTMLImageElement. The Strings are the full path to image.
+ */
+function convert(assets) {
+    Object.keys(imageStringSections).forEach(property => {
+        imageStringSections[property] = issToImageSection(imageStringSections[property], assets);
+    });
+
+    Object.freeze(imageStringSections);
+    
+    converted = true;
+    //assetsRef = assets;
+}
+
+/**
+ * Gets the iss namespace which now holds HTMLImageSections. Only works after convert() is called.
+ */
+function sections() {
+    if (!converted) {
+        throw "bruh";
+    }
+
+    return imageStringSections;
+}
+
+export { convert, sections }

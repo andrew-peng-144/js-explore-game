@@ -2,6 +2,7 @@ import * as Engine from "/dev/engine/engine.js";
 import * as MyAssetLoader from "../myassetloader.js";
 import * as MySettings from "../mysettings.js";
 import * as CM from "../canvas-manager.js";
+import * as ImageDef from "../imagedef.js";
 
 //the very first state of the game
 //that loads essential things for startup
@@ -29,7 +30,10 @@ function update() {
     //keep checking if all assets (images) are loaded
     //if so, goto mainstate (goto menu for production)
     if (numLoaded === numAssets) {
-        //done ni
+        //done loading assets
+        //now update ImageDef to now hold image sections associated with loaded assets.
+        ImageDef.convert(MyAssetLoader.assets);
+
         Engine.State.queueState(MySettings.GameStateID.LoadWorld);
     }
 }

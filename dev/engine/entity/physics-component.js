@@ -137,6 +137,7 @@ function isRectHitbox(hitbox) {
 /**
  * a cleaner way to set properties of physics component instead of passing like 7 params
  * An object of this is NOT copied over, instead the physicscomponent object will hold a REFERENCE to this.
+ * So this isn't reuseable TODO make it reusable by copying each over
  */
 function PhysicsOptions() {
     this._awerfwifwhofiwhofiqwf = 2;

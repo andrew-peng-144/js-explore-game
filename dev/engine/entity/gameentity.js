@@ -67,9 +67,17 @@ function createEntity(x, y) {
 //     }
 //     this.hitbox = rectHitbox;
 // }
-GameEntity.prototype.withRenderComponent = function (ctx, imageSection, camera, offsetX, offsetY) {
-    let rc = RenderComponent.createRenderComponent(this, ctx, imageSection, camera, offsetX, offsetY);
-    this.renderComponent = rc;
+
+/**
+ * Links this gameEntity with the specified renderComponent.
+ */
+GameEntity.prototype.withRenderComponent = function (renderComponent) {
+    if (renderComponent.constructor.name !== "RenderComponent") {
+        throw "rip";
+    }
+    //let rc = RenderComponent.createRenderComponent(this);
+    renderComponent.setEntityRef(this);
+    this.renderComponent = renderComponent;
     return this;
 
 }

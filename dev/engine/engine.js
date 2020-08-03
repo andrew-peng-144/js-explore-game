@@ -162,6 +162,26 @@ let setAssetPaths = function (arr) {
     //return ConfigControl;
 }
 
+/** Update all gameentities in the system by updating all components except rendercomponent in THIS ORDER:
+ * input, physics, behavior, then doQueuedremove
+ */
+function updateAll() {
+    InputComponent.updateAll();
+    //Engine.Entity.updateKinematicComponents();
+    //Engine.Entity.handleHitboxCollisions();
+    PhysicsComponent.updateAll();
+
+    Behavior.updateAll();
+    GameEntity.doQueuedRemoves();
+}
+
+/**
+ * Draw all gameentities' rendercomponents.
+ */
+function drawAll() {
+    RenderComponent.drawAll();
+}
+
 // unneeded cuz creategamestate is what users uses to create and it puts the state into the system anyway.
 // Config.setGameStates = function(...states) {
 //     states.forEach(state => {
@@ -188,21 +208,30 @@ let Startup = {
 let Entity = {
     createEntity: GameEntity.createEntity,
     doQueuedRemoves: GameEntity.doQueuedRemoves,
-    updateInputComponents: InputComponent.updateAll,
-    //updateKinematicComponents: KinematicComponent.updateAll,
-    //handleHitboxCollisions: Hitbox.checkForCollisions,
-    drawRenderComponents: RenderComponent.drawAll,
-    updatePhysics: PhysicsComponent.updateAll,
-    updateBehavior: Behavior.updateAll,
+    // updateInputComponents: InputComponent.updateAll,
+    // //updateKinematicComponents: KinematicComponent.updateAll,
+    // //handleHitboxCollisions: Hitbox.checkForCollisions,
+    // drawRenderComponents: RenderComponent.drawAll,
+    // updatePhysics: PhysicsComponent.updateAll,
+    // updateBehavior: Behavior.updateAll,
 
-    newPhysicsOptions: PhysicsComponent.newOptions,
+    // newPhysicsOptions: PhysicsComponent.newOptions,
 
-    createInputComponent: InputComponent.createInputComponent, //TODO have these for the rest of the comps. cleaner.
+    // createInputComponent: InputComponent.createInputComponent, 
 
-    countPhysics: PhysicsComponent.getCount,
-    countRender: RenderComponent.getCount,
-    countInput: InputComponent.getCount,
-    countBehavior: Behavior.getCount,
+    // countPhysics: PhysicsComponent.getCount,
+    // countRender: RenderComponent.getCount,
+    // countInput: InputComponent.getCount,
+    // countBehavior: Behavior.getCount,
+
+    //TODO have factory methods stuff for the rest of the comps. cleaner.
+    PhysicsComponent: PhysicsComponent,
+    RenderComponent: RenderComponent,
+    InputComponent: InputComponent,
+    Behavior: Behavior,
+
+    updateAll: updateAll,
+    drawAll: drawAll
 }
 
 /**
@@ -225,6 +254,7 @@ export {
     start, getFramesElapsed, hasStarted,
     Startup,
     State,
+    //Entity,
     Entity,
     HTMLImageSection,
     Camera2D,

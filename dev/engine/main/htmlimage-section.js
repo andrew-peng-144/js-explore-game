@@ -26,7 +26,7 @@ function ImageSlice(image, sx, sy, sw, sh) {
  * Same as ImageSlice but defines multiple images (of the same width and height) in a hortizontal row.
  * Used for defining an animation clip
  * @param {Number} n number of images to define in that row
- * @param {Number} sw width of ONE IMAGE in pixels
+ * @param {Number} sw width of EACH INDIVIDUAL IMAGE in pixels
  */
 function ImageStrip(image, n, sx, sy, sw, sh) {
     ImageSlice.call(this, image, sx, sy, sw, sh);
@@ -48,4 +48,13 @@ function newImageStrip(image, n, sx, sy, sw, sh) {
     return new ImageStrip(image, n, sx, sy, sw, sh);
 }
 
-export { newImageSlice, newImageStrip }
+//TODO needa actually use this method outside
+function isImageStrip(obj) {
+    return obj instanceof ImageStrip;
+}
+
+function isImageSlice(obj) {
+    return obj instanceof ImageSlice;
+}
+
+export { newImageSlice, newImageStrip, isImageStrip, isImageSlice }
