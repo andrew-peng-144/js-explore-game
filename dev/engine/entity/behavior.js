@@ -1,23 +1,30 @@
-//attach per-frame scripting on entities.
+//A component that allows attaching per-frame custom scripting on entities
 //since js forms closures, the context for the vars in the func is usually in its own file (like player.js, enemy.js)
 
-let behaviorSet = new Set();
+/**
+ * @type {Map<number, Function}
+ */
+let behaviors = new Map();
 
-function addBehavior(func) {
-    behaviorSet.add(func);
+function create(id, func) {
+    // behaviors.add(func);
+    if (behaviors.has(id)) {
+        throw id + " already has a behavior.";
+    }
+    behaviors.set(id, func);
     return func;
 }
 function updateAll() {
-    behaviorSet.forEach(b => {
+    behaviors.forEach(b => {
         b();
     });
 }
 function remove(func) {
-    behaviorSet.delete(func);
+    behaviors.delete(func);
 }
 
 function getCount() {
-    return behaviorSet.size;
+    return behaviors.size;
 }
 
-export {addBehavior, updateAll, getCount, remove};
+export { create, updateAll, getCount, remove };

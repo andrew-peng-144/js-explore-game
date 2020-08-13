@@ -55,4 +55,4 @@ function createCamera2D() {
     return new Camera2D();
 }
 
-export { createCamera2D };
+export { createCamera2D, Camera2D };

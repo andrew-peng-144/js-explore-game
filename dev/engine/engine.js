@@ -32,7 +32,18 @@ import * as GameState from "./main/gamestate.js";
 import * as HTMLImageSection from "./main/htmlimage-section.js";
 import * as TileMapRenderer from "./main/tilemap-renderer.js";
 
+import * as Counter from "./main/counter.js";
+
 let documentLoaded = false;
+
+let started;
+
+
+var now, dt, last, step, maxSeconds;
+let framesElapsed = 0;
+let updates = 0;
+var framesSkipped = 0;
+
 
 document.addEventListener('DOMContentLoaded', function () { documentLoaded = true }, false);
 
@@ -54,7 +65,7 @@ function start() {
 }
 
 //initializes stuff but only starts after document's loaded
-let started;
+
 function hasStarted() {
     return started;
 }
@@ -90,7 +101,6 @@ function start2() {
 }
 
 
-var now, dt, last, step, maxSeconds;
 function startLoop() {
     //now,
     dt = 0;
@@ -108,10 +118,17 @@ function startLoop() {
         GameState.handleStateChange();
         if (GameState.currentStateCatchUpUpdates()) {
             //keep calling update to make up for lag
+            let i = -1;
             while (dt > step) {
                 dt = dt - step;
                 GameState.stepCurrentState();
                 //if step takes really long (longer than ~17ms) then next loop it will execute it many times in a row.
+                updates++;
+
+                i++;
+            }
+            if (i > 0) {
+                framesSkipped += i;
             }
         }
         else {
@@ -121,6 +138,8 @@ function startLoop() {
 
         //Graphics.
         RENDER(); //caveat: will call RENDER() at the very beginning at least once, before it even calls UPDATE()...
+
+
 
         last = now;
         framesElapsed++;
@@ -144,43 +163,24 @@ function RENDER() {
 
 }
 
-let framesElapsed = 0;
-
-let assetNames;
 function getFramesElapsed() { return framesElapsed; }
+function getFramesSkipped() {return framesSkipped;}
+function getNumUpdates() { return updates; }
 
-// let withCanvas = function (canvas, id) {
-//     CanvasManager.addCanvas(canvas, id);
+// // let withCanvas = function (canvas, id) {
+// //     CanvasManager.addCanvas(canvas, id);
+// //     //return ConfigControl;
+// // }
+// let setAssetPaths = function (arr) {
+
+//     if (arr.constructor.name !== "Array" || arr[0] && typeof arr[0] !== "string") {
+//         throw "aint an array of strings";
+//     }
+//     assetNames = arr;
 //     //return ConfigControl;
 // }
-let setAssetPaths = function (arr) {
 
-    if (arr.constructor.name !== "Array" || arr[0] && typeof arr[0] !== "string") {
-        throw "aint an array of strings";
-    }
-    assetNames = arr;
-    //return ConfigControl;
-}
 
-/** Update all gameentities in the system by updating all components except rendercomponent in THIS ORDER:
- * input, physics, behavior, then doQueuedremove
- */
-function updateAll() {
-    InputComponent.updateAll();
-    //Engine.Entity.updateKinematicComponents();
-    //Engine.Entity.handleHitboxCollisions();
-    PhysicsComponent.updateAll();
-
-    Behavior.updateAll();
-    GameEntity.doQueuedRemoves();
-}
-
-/**
- * Draw all gameentities' rendercomponents.
- */
-function drawAll() {
-    RenderComponent.drawAll();
-}
 
 // unneeded cuz creategamestate is what users uses to create and it puts the state into the system anyway.
 // Config.setGameStates = function(...states) {
@@ -198,41 +198,41 @@ function drawAll() {
 let Startup = {
     //withCanvas: withCanvas,
     createGameState: GameState.createGameState,
-    setAssetPaths: setAssetPaths,
+    //setAssetPaths: setAssetPaths,
     setStartingState: GameState.setStartingState
 }
 
-/**
- * Namespace holding all methods related to entities.
- */
-let Entity = {
-    createEntity: GameEntity.createEntity,
-    doQueuedRemoves: GameEntity.doQueuedRemoves,
-    // updateInputComponents: InputComponent.updateAll,
-    // //updateKinematicComponents: KinematicComponent.updateAll,
-    // //handleHitboxCollisions: Hitbox.checkForCollisions,
-    // drawRenderComponents: RenderComponent.drawAll,
-    // updatePhysics: PhysicsComponent.updateAll,
-    // updateBehavior: Behavior.updateAll,
+// /**
+//  * Namespace holding all methods related to entities.
+//  */
+// let Entity = {
+//     createEntity: GameEntity.createEntity,
+//     queueRemoval: GameEntity.queueRemoval,
+//     // updateInputComponents: InputComponent.updateAll,
+//     // //updateKinematicComponents: KinematicComponent.updateAll,
+//     // //handleHitboxCollisions: Hitbox.checkForCollisions,
+//     // drawRenderComponents: RenderComponent.drawAll,
+//     // updatePhysics: PhysicsComponent.updateAll,
+//     // updateBehavior: Behavior.updateAll,
 
-    // newPhysicsOptions: PhysicsComponent.newOptions,
+//     // newPhysicsOptions: PhysicsComponent.newOptions,
 
-    // createInputComponent: InputComponent.createInputComponent, 
+//     // createInputComponent: InputComponent.createInputComponent, 
 
-    // countPhysics: PhysicsComponent.getCount,
-    // countRender: RenderComponent.getCount,
-    // countInput: InputComponent.getCount,
-    // countBehavior: Behavior.getCount,
+//     // countPhysics: PhysicsComponent.getCount,
+//     // countRender: RenderComponent.getCount,
+//     // countInput: InputComponent.getCount,
+//     // countBehavior: Behavior.getCount,
 
-    //TODO have factory methods stuff for the rest of the comps. cleaner.
-    PhysicsComponent: PhysicsComponent,
-    RenderComponent: RenderComponent,
-    InputComponent: InputComponent,
-    Behavior: Behavior,
+//     //TODO have factory methods stuff for the rest of the comps. cleaner.
+//     PhysicsComponent: PhysicsComponent,
+//     RenderComponent: RenderComponent,
+//     InputComponent: InputComponent,
+//     Behavior: Behavior,
 
-    updateAll: updateAll,
-    drawAll: drawAll
-}
+//     updateAll: updateAll,
+//     drawAll: drawAll
+// }
 
 /**
  * Namespace holding all methods related to the GameState
@@ -251,11 +251,16 @@ let ZOOM = Settings.ZOOM;
 //let TileMapRenderer = TileMapRenderer;
 
 export {
-    start, getFramesElapsed, hasStarted,
+    start, getFramesElapsed, getFramesSkipped, getNumUpdates, hasStarted,
+    Counter,
+
     Startup,
     State,
     //Entity,
-    Entity,
+    GameEntity,
+    PhysicsComponent, RenderComponent, InputComponent, Behavior,
+
+
     HTMLImageSection,
     Camera2D,
     //AssetLoader,

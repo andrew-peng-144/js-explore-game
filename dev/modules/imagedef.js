@@ -1,8 +1,8 @@
 import * as Engine from "../engine/engine.js";
 //Defines a STRING PATH, and associated SLICE DATA.
-//The declarations are for use with the Engine's HTMLImageSlice.
+//The declarations are for use with the Engine's HTMLImageSection.
 //Which is exactly the same as this except it's the actual html image object instead of the string path.
-//So at some point during initialization but after assets are loaded, convert all to HTMLImageSlices.
+//So at some point during initialization but after assets are loaded, convert all to HTMLImageSections.
 
 let TILE_SIZE = 16;
 function wow(imgName, sxt, syt, swt = 1, sht = 1) {
@@ -12,6 +12,7 @@ function wow(imgName, sxt, syt, swt = 1, sht = 1) {
         sy: syt * TILE_SIZE,
         sw: swt * TILE_SIZE,
         sh: sht * TILE_SIZE,
+        n: 1,
         asdfwow: "WOW" //a way to put a "unique identifier" to this "class" LMFAO
     };
 }
@@ -48,11 +49,14 @@ var imageStringSections = {
 
 
     //CLOUD_BKGD: newBackgroundImage("clouds_test_bkgd.png"),
-    // FIRE: newAnimatedImage(s, 2, 4, 8, 10),
+    FIRE: awow(s, 4, 2, 8),
     // WALKING_TEST: newAnimatedImage(s, 2, 4, 0, 13, 1, 2),
     // WALKING_LEFT_TEST: newAnimatedImage(s, 6, 4, 0, 13, 1, 2),
     // WALKING_RIGHT_TEST: newAnimatedImage(s, 2, 4, 2, 13, 1, 2),
-    NPC1_WALKING_SOUTH: awow(s, 4, 2, 0, 1, 2)
+    NPC1_WALKING_SOUTH: awow(s, 4, 2, 0, 1, 2),
+    NPC1_WALKING_NORTH: awow(s, 4, 6, 2, 1, 2),
+    NPC1_WALKING_EAST: awow(s, 4, 2, 2, 1, 2),
+    NPC1_WALKING_WEST: awow(s, 4, 6, 0, 1, 2)
 };
 
 /**
@@ -66,25 +70,32 @@ function issToImageSection(imageStringSection, assets) {
         //not even an iss
         throw "RIP";
     }
+    return Engine.HTMLImageSection.create(assets[imageStringSection.name],
+        imageStringSection.sx,
+        imageStringSection.sy,
+        imageStringSection.sw,
+        imageStringSection.sh,
+        imageStringSection.n,
+    );
 
-    if (imageStringSection.n) {
-        return Engine.HTMLImageSection.newImageStrip(assets[imageStringSection.name],
-            imageStringSection.n,
-            imageStringSection.sx,
-            imageStringSection.sy,
-            imageStringSection.sw,
-            imageStringSection.sh
+    // if (imageStringSection.n) {
+    //     return Engine.HTMLImageSection.newImageStrip(assets[imageStringSection.name],
+    //         imageStringSection.n,
+    //         imageStringSection.sx,
+    //         imageStringSection.sy,
+    //         imageStringSection.sw,
+    //         imageStringSection.sh
 
-        );
-    } else {
-        return Engine.HTMLImageSection.newImageSlice(assets[imageStringSection.name],
-            imageStringSection.sx,
-            imageStringSection.sy,
-            imageStringSection.sw,
-            imageStringSection.sh
+    //     );
+    // } else {
+    //     return Engine.HTMLImageSection.newImageSlice(assets[imageStringSection.name],
+    //         imageStringSection.sx,
+    //         imageStringSection.sy,
+    //         imageStringSection.sw,
+    //         imageStringSection.sh
 
-        );
-    }
+    //     );
+    // }
 
 }
 
@@ -102,7 +113,7 @@ function convert(assets) {
     });
 
     Object.freeze(imageStringSections);
-    
+
     converted = true;
     //assetsRef = assets;
 }

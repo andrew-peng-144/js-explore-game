@@ -1,3 +1,36 @@
+//This may undergo major revision........
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//TODO only draw on the ones on screen, AND have a sorted-order for them.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //Rip have this outsidfe of the engine.?
 
 //COMPONENTS CAN BE STORED AS A "SET" DATA STRUCTURE, IT IS FASTER THAN AN ARRAY FOR ADD/REMOVE/CONTAINS!
@@ -5,203 +38,245 @@
 
 import * as Settings from "../settings.js";
 import * as HTMLImageSection from "../main/htmlimage-section.js";
-import { TILE_SIZE } from "../../modules/mysettings.js";
-//import * as AssetLoader from "../main/assetloader.js";
 
-// function RenderComponent(entityRef, ctx, imageSection, camera, offsetX, offsetY) {
-//     this.entityRef = entityRef;
-//     this.ctx = ctx;
-//     if (imageSection.constructor.name !== "ImageSlice" && imageSection.constructor.name !== "ImageStrip"
-//         || camera.constructor.name !== "Camera2D" || ctx.constructor.name !== "CanvasRenderingContext2D") {
-//         throw "wrong class buddy";
-//     }
+import { Camera2D } from "../main/camera2D.js";
+import { PhysicsComponent } from "../engine.js";
 
-//     //TODO allow to store references to multiple imagesections - multiple animations/images.
-//     this.imageSection = imageSection;
-//     this.offsetX = offsetX || 0;
-//     this.offsetY = offsetY || 0;
-//     this.camera = camera;
+var defaultCtx = null;
+var defaultCam = null;
 
-//     //for animations:
-//     this.nFrames = 0; //# frames this has been drawn
-//     this.nSlides = 0; //# slides that have passed in the animation
-// }
+/**
+ * @type {Map<number, RenderComponent>}
+ */
+var renderComponents = new Map();
 
-// function newDef() {
-//     return new RenderComponentDef();
-// }
+function RenderComponent(id) {
+    if (typeof id !== "number") {
+        throw "YES";
+    }
+    if (renderComponents.has(id)) {
+        throw id + " already has a rendercomponent.";
+    }
+    this.entityID = id;
 
-function RenderComponent() {
-    this.ctx = null;
-    this.graphics = new Map();
-    this.offsetX = 0;
-    this.offsetY = 0;
-    this.camera = null;
+    this.ctx = defaultCtx;
+    //this.imageSection = null;
+    this.x = 0;
+    this.y = 0;
 
-    this.currGraphicKey = 0;
+    this.pcRef = null;
+    this.pcOffX = 0;
+    this.pcOffY = 0;
+    // this.getX = null;
+    // this.getY = null;
+    this.camera = defaultCam;
 
-    //for handling the current animation
-    this.anim_frameCount = 0;
-    this.anim_slideCount = 0;
+    //for imageStrips.
+    this.currSlide = 0;
+
+    //user-set function that return Image and Slide for drawing
+    this.getSection = null;
+    this.getSlide = null;
+
+    // renderComponents.add(rc);
+    renderComponents.set(id, this);
 }
+
+
+//Initializer methods///////////////
+
 RenderComponent.prototype.setContext2D = function (ctx) {
     this.ctx = ctx;
     return this;
 }
+
 /**
- * Add a ImageSlice that can be displayed on this entity.
- * The "key" of the image can be specified for identifying which image to set this r.c. to with setCurrImage or will assume key = 0 (which will override other 0's)
+ * Sets the function that returns the imageSection
+ * @param {Function} func
  */
-RenderComponent.prototype.addImageSlice = function (is, key) {
-    if (
-        !HTMLImageSection.isImageSlice(is)
-    ) { throw "rip"; }
-
-    if (!key) {
-        key = 0;
+RenderComponent.prototype.setGetSection = function (func) {
+    if (typeof func === "function") {
+        if (func()) {
+            if (HTMLImageSection.isImageSection(func())) {
+                this.getSection = func;
+                return this;
+            }
+        }
     }
-    this.graphics.set(key, is);
-    return this;
-}
-/**
- * Add a ImageStrip as an ANIMATION to this entity!
- * @param {Number} key Continuous with addImageSlice's key param, assume 0
- * @param {Number} delay The delay between animation slides, in number of frames, default 15.
- */
-RenderComponent.prototype.addAnimation = function (istrip, key, delay = 15) {
-    if (!HTMLImageSection.isImageStrip(istrip)) {
-        throw "(st)rip";
-    }
-    if (!key) {
-        key = 0;
-    }
-    //let animObj = {};
-
-    //add properties to istrip (value of graphics Map)
-    istrip.isAnim = true;
-    istrip.delay = delay;
-
-    this.graphics.set(key, istrip);
-    return this;
+    throw "Callback needs to return a ImageSection";
 }
 
-RenderComponent.prototype.setOffset = function (x, y) {
+/**
+ * Sets the function that returns the slide (if the current image is a ImageSlice, it is unaffected).
+ * @param {Function} func
+ */
+RenderComponent.prototype.setGetSlide = function (func) {
+    if (typeof func === "function") {
+        if (func()) {
+            if (typeof func() === "number") {
+                this.getSlide = func;
+                return this;
+            }
+        }
+    }
+    throw "Callback needs to return a number";
+}
+// /**
+//  * Set two functions, both returning a number for the x and y coordinates to set this rendercomponent to every frame right before drawing.
+//  * If this function is never called, the RC will just be drawn at 0,0 (world coords)
+//  * @param {Function} getX function that returns an x value. Typically bind()ed with the object with the x value...
+//  * @param {Function} getY also use bind()
+//  */
+// RenderComponent.prototype.linkToPosition = function (getX, getY) {
+//     debugger;
+//     if (typeof getX === "function" && typeof getY === "function") {
+//         if (typeof getX() === "number" && typeof getY() === "number") {
+//             this.getX = getX;
+//             this.getY = getY;
+//             return this;
+//         }
+//     }
+//     throw "Callbacks need to both return a number";
+// }
+/**
+ * pass in a PhysicsComponent whose AABB's position is where this RC should be drawn...
+ * it will center the image on the hitbox.
+ * setPosition() will not do anything after setting this
+ * @param {Number} offX Offset in the x direction, positive will move the image RIGHT relative to the pc.
+ * @param {Number} offY offset in the y dir, position will move image DOWN
+ */
+RenderComponent.prototype.linkPosToPhysics = function (pc, offX, offY) {
+    if (PhysicsComponent.isPhysicsComponent(pc)) {
+        this.pcRef = pc;
+        this.pcOffX = offX;
+        this.pcOffY = offY;
+        return this;
+    }
+    throw "bruh";
+}
+/**
+ * Sets the position relative to the screen, or world if there is a camera
+ */
+RenderComponent.prototype.setPosition = function (x, y) {
     if (typeof x !== "number" && typeof y !== "number") {
         throw "rip";
     }
-    this.offsetX = x;
-    this.offsetY = y;
+    this.x = x;
+    this.y = y;
     return this;
 }
 RenderComponent.prototype.setCamera = function (cam) {
     if (cam.constructor.name !== "Camera2D") {
         throw "rip";
     }
+    if (cam === this.camera) {
+        console.log("This exact camera was already set");
+    }
     this.camera = cam;
     return this;
 }
 
-/**
- * Set which graphic to render given the key.
- * If it is set to an animation, the animation will start immediately.
- */
-RenderComponent.prototype.setCurrGraphic = function (key) {
-    this.currGraphicKey = key;
+// RenderComponent.prototype.setEntityRef = function (entityRef) {
+//     this.entityRef = entityRef;
+//     return this;
+// }
 
-    this.anim_frameCount = 0;
-    this.anim_slideCount = 0;
+// /**
+//  * draws the image to screen coords given world coords. Called by drawAll.
+//  */
+// RenderComponent.prototype.draw = function (x, y) {
 
-    return this;
-}
+//     //debugger;
+//     // if (this.positionObj) {
+//     //     this.x = obj.x;
+//     //     this.y = obj.y;
+//     // }
 
-RenderComponent.prototype.setEntityRef = function (entityRef) {
-    this.entityRef = entityRef;
-     return this;
-}
+//     // let canvasData = CanvasManager.getCanvasData(this.canvasID);
+//     //debugger;
+//     let zoom = Settings.ZOOM;
 
+//     // let cam = canvasData.settings.camera;
+//     // if (!AssetLoader.getAsset(this.imageSection.imgFileName)) {
+//     //     throw "can't draw asset isn't loaded lmao";
+//     // }
 
+//     //let imgSection = this.imageSection;
+//     let imgSection = this.getSection();
 
-/**
- * draws the image to x and y screen coords.
- */
-RenderComponent.prototype.draw = function () {
+//     let sx = imgSection.sx,
+//         sy = imgSection.sy,
+//         sw = imgSection.sw,
+//         sh = imgSection.sh,
+//         dw = imgSection.sw * zoom,
+//         dh = imgSection.sh * zoom;
 
-    debugger;
+//     // for images with n=2 or higher, choose which slide
+//     if (imgSection.n >= 2) {
+//         sx = imgSection.sx + (this.getSlide() % imgSection.n) * imgSection.sw;
+//     }
 
+//     let camOffsetX = 0, camOffsetY = 0;
+//     if (this.camera) {
+//         //if canvas has a 2d camera, draw relative to the camera's pos
+//         camOffsetX = this.camera.getExactX();
+//         camOffsetY = this.camera.getExactY();
+//     }
+//     let destX = Math.round((x - camOffsetX) * zoom);
+//     let destY = Math.round((y - camOffsetY) * zoom);
 
-    // let canvasData = CanvasManager.getCanvasData(this.canvasID);
-    //debugger;
-    let zoom = Settings.ZOOM;
-
-    // let cam = canvasData.settings.camera;
-    // if (!AssetLoader.getAsset(this.imageSection.imgFileName)) {
-    //     throw "can't draw asset isn't loaded lmao";
-    // }
-
-    let graphic = this.graphics.get(this.currGraphicKey);
-    let sx = graphic.sx,
-        sy = graphic.sy,
-        sw = graphic.sw,
-        sh = graphic.sh,
-        dw = graphic.sw * zoom,
-        dh = graphic.sh * zoom;
-
-
-    //TODO draw animashunz.
-    //animation code 
-    if (graphic.isAnim) {
-        //is animation so tick counters and set sx
-
-        if (this.anim_frameCount % graphic.delay === 0 && this.anim_frameCount !== 0) {
-            this.anim_slideCount++;
-        }
-
-        // let the_sxt = this.image.sxt;
-        // if (this.image.delay) {
-        //     //animated..
-
-        //     if (this.nFrames % this.image.delay == 0 && this.nFrames / this.image.delay != 0) {
-        //         this.nSlides++;
-        //     }
-        sx = graphic.sx + (this.anim_slideCount % graphic.n) * graphic.sw;
-        //Choosing which keyframe to draw based on time passed & width of graphic
-
-        // }
-        this.anim_frameCount++;
-    }
+//     this.ctx.drawImage(imgSection.image,
+//         sx, sy, sw, sh,
+//         destX,
+//         destY,
+//         dw, dh
+//     );
 
 
-    let camOffsetX = 0, camOffsetY = 0;
-    if (this.camera) {
-        //if canvas has a 2d camera, draw relative to the camera's pos
-        camOffsetX = this.camera.getExactX();
-        camOffsetY = this.camera.getExactY();
-    }
-    let destX = Math.round((this.entityRef.getX() - this.getWidth() / 2 - this.offsetX - camOffsetX) * zoom);
-    let destY = Math.round((this.entityRef.getY() - this.getHeight() / 2 - this.offsetY - camOffsetY) * zoom);
+//     this.nFrames++;
+// }
 
-    this.ctx.drawImage(graphic.image,
-        sx, sy, sw, sh,
-        destX,
-        destY,
-        dw, dh
-    );
+//idk
 
-
-    this.nFrames++;
-}
 /**
  * Gets the width of the image, specifying the key, or will assume key 0. This is its width in pixels, not accounting for zoom
  */
 RenderComponent.prototype.getWidth = function (key = 0) {
-    return this.graphics.get(key).sw;
+    return this.getSection().sw;
 }
 RenderComponent.prototype.getHeight = function (key = 0) {
-    return this.graphics.get(key).sh;
+    return this.getSection().sh;
 }
-RenderComponent.prototype.remove = function () {
-    renderComponents.delete(this);
-}
+
+
+
+
+// //called by user anytime
+// //only this method is allowed to set RenderComponent's current image!
+// /**
+//  * Sets the ImageSlice or ImageStrip to be displayed on this entity. If ImageStrip, also specify which slide (0-indexed and wraps around n)
+//  * @param {Number} slide will be truncated
+//  */
+// RenderComponent.prototype.setImageSection = function (is, slide = 0) {
+//     if (
+//         !HTMLImageSection.isImageSlice(is) && !HTMLImageSection.isImageStrip(is)
+//     ) { throw "rip"; }
+
+//     this.imageSection = is;
+
+//     this.setSlide(slide);
+//     return this;
+// }
+
+// /**
+//  * Set the current slide of the current ImageSLICE to be displayed
+//  */
+// RenderComponent.prototype.setSlide = function (int) {
+//     if (typeof int !== "number") {
+//         throw "WOW";
+//     }
+//     this.currSlide = Math.floor(int);
+// }
 
 // var tileSize = 16;
 // //STATIC///
@@ -212,29 +287,126 @@ RenderComponent.prototype.remove = function () {
 //     tileSize = ts;
 // }
 
-var renderComponents = new Set();
+
+
+//Module-scope static methods
+
+/**
+ * If a RC's context2D is not explicitly set, this will be the context it uses
+ */
+let setDefaultContext2D = function (ctx) {
+    if (ctx instanceof CanvasRenderingContext2D) {
+        defaultCtx = ctx;
+    } else {
+        throw "BRUH!";
+    }
+}
+
+/**
+ * If a RC's camera is not explicitly set, this will be the camera it uses.
+ */
+let setDefaultCamera = function (cam) {
+    if (cam instanceof Camera2D) {
+        defaultCam = cam;
+    }
+}
+
+var remove = function (id) {
+    renderComponents.delete(id);
+}
 
 /**
  * create a rendercomponent with default values. Set the ctx, images, camera, using the instance methods.
  * Ctx and at least 1 imagesection must be present in order for it to be drawn!
  *
- * @param {Number} offsetX the number of pixels that this image is offset (subtracted) from the center of the gameentity
+ * @param {Number} id the entity ID
  */
-function createRenderComponent() {
+function create(id) {
     // if (AssetLoader.getNumAssets === 0) {
     //     throw "can't create render component if there's no assets loaded";
     // }
 
-    let rc = new RenderComponent();
-    renderComponents.add(rc);
+    let rc = new RenderComponent(id);
     return rc;
 }
 
+function get(id) {
+    return renderComponents.get(id);
+}
+
+var viewportWidth = 800;
+var viewportHeight = 500;
+/**
+ * Set the size of the game viewport in actual pixels.
+ * This is just to only draw entities in the actual viewport.
+ * The default values for width and height are 800 and 500.
+ * @param {number} width IN REAL PIXELS
+ * @param {number} height IN REAL PIXELS
+ */
+function setViewingBounds(width, height) {
+    viewportWidth = width;
+    viewportHeight = height;
+}
 var drawAll = function () {
-    renderComponents.forEach(r => r.draw());
+    let x = 0, y = 0;
+    renderComponents.forEach(
+        r => {
+            //draw only if in bounds (it checks for screen coords NOT accounting for zoom)
+            //debugger;
+            if (r.pcRef) {
+                //CENTERED, then moved by pcOffset
+                r.x = r.pcRef.getAABBX() - (r.getWidth() - r.pcRef.getAABBWidth()) / 2 + r.pcOffX;
+                r.y = r.pcRef.getAABBY() - (r.getHeight() - r.pcRef.getAABBHeight()) / 2 + r.pcOffY;
+            }
+            if (r.x + r.getWidth() >= r.camera.getExactX() && r.y + r.getHeight() >= r.camera.getExactY()
+                && r.x <= r.camera.getExactX() + viewportWidth / Settings.ZOOM
+                && r.y <= r.camera.getExactY() + viewportHeight / Settings.ZOOM) {
+
+                //r.draw(x, y);
+                let zoom = Settings.ZOOM;
+
+                let imgSection = r.getSection();
+
+                let sx = imgSection.sx,
+                    sy = imgSection.sy,
+                    sw = imgSection.sw,
+                    sh = imgSection.sh,
+                    dw = imgSection.sw * zoom,
+                    dh = imgSection.sh * zoom;
+
+                // for images with n=2 or higher, choose which slide
+                if (imgSection.n >= 2) {
+                    sx = imgSection.sx + (r.getSlide() % imgSection.n) * imgSection.sw;
+                }
+
+                let camOffsetX = 0, camOffsetY = 0;
+                if (r.camera) {
+                    //if canvas has a 2d camera, draw relative to the camera's pos
+                    camOffsetX = r.camera.getExactX();
+                    camOffsetY = r.camera.getExactY();
+                }
+                let destX = Math.round((r.x - camOffsetX) * zoom);
+                let destY = Math.round((r.y - camOffsetY) * zoom);
+
+                r.ctx.drawImage(imgSection.image,
+                    sx, sy, sw, sh,
+                    destX,
+                    destY,
+                    dw, dh
+                );
+
+
+                r.nFrames++;
+            }
+        }
+    );
 }
 
 function getCount() {
     return renderComponents.size;
 }
-export { createRenderComponent, drawAll, getCount }
+export {
+    create, remove, get,
+    drawAll,
+    getCount, setDefaultContext2D, setDefaultCamera, setViewingBounds
+}

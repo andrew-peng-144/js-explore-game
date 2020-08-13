@@ -73,12 +73,17 @@ function getCamera() {
 }
 
 
+
+// let OFSCREEN_TEST = document.createElement("canvas");
+// OFSCREEN_TEST.width = 800;
+// OFSCREEN_TEST.height = 600;
+// let OFSCREEN_CTX = OFSCREEN_TEST.getContext("2d", { alpha: false });
+// OFSCREEN_CTX.imageSmoothingEnabled = false;
 /**
  * @param {HTMLImageElement} tilesetImage an HTML image element of the TileSet.
  * @param {Number} tilesetTWidth width of the tileset in tiles.
  */
 function renderVisibleTiles() {
-
 
     //let TILE_SIZE = tilesize;
     let ZOOM = Settings.ZOOM;
@@ -99,11 +104,12 @@ function renderVisibleTiles() {
     let tilesetTWidth = tilesetImage.width / TILE_SIZE;
     let x, y, id, //x: x coodinate of the map array.
         xi = Math.floor(camera.getExactX() / TILE_SIZE), //these 4 are in units of tiles.
-        xf = Math.ceil((camera.getExactX() + canvas.width) / TILE_SIZE),
+        xf = Math.ceil((camera.getExactX() + canvas.width / ZOOM) / TILE_SIZE), //need to divide canvas width by ZOOM.
         yi = Math.floor(camera.getExactY() / TILE_SIZE),
-        yf = Math.ceil((camera.getExactY() + canvas.height) / TILE_SIZE);
+        yf = Math.ceil((camera.getExactY() + canvas.height / ZOOM) / TILE_SIZE);
     //console.log("xi " + xi + " xf " + xf + " yi " + yi + " yf" + yf);
     var arr = settingsObj.mapArr;
+
 
     for (x = xi; x < xf; x++) {
         for (y = yi; y < yf; y++) {
@@ -111,7 +117,7 @@ function renderVisibleTiles() {
                 id = arr[x + mapTWidth * y];
                 if (id > 0) {
                     ctx.drawImage(tilesetImage,
-                        (id - 1) % tilesetTWidth * TILE_SIZE,
+                        (id - 1) % tilesetTWidth * TILE_SIZE, // (id - 1) because Tiled adds 1 to the id for JSON format (?)
                         Math.floor((id - 1) / tilesetTWidth) * TILE_SIZE,
                         TILE_SIZE,
                         TILE_SIZE,
@@ -119,11 +125,14 @@ function renderVisibleTiles() {
                         Math.round(((y * TILE_SIZE) - camera.getExactY()) * ZOOM),
                         TILE_SIZE * ZOOM,
                         TILE_SIZE * ZOOM);
-
+                    //debugger;
                 }
             }
         }
     }
+
+    //ctx.drawImage(OFSCREEN_TEST, 0, 0);
+    //OFSCREEN_CTX.clearRect(0, 0, 800, 600);
 }
 
 export { renderVisibleTiles, settings, getCamera };

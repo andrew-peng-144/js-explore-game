@@ -1,4 +1,4 @@
-import * as Engine from "/dev/engine/engine.js";
+import * as Engine from "../../engine/engine.js";
 import * as MyAssetLoader from "../myassetloader.js";
 import * as MySettings from "../mysettings.js";
 import * as CM from "../canvas-manager.js";
@@ -13,6 +13,9 @@ let numAssets = assetsArr.length;
 let numLoaded = 0;
 function onEnter(from) {
     //first state in the game so param "from" will be null
+
+    //init simple stuff
+    Engine.RenderComponent.setViewingBounds(MySettings.V_WIDTH, MySettings.V_HEIGHT);
 
     //start loading all assets
     let onLoad = function () {
@@ -33,6 +36,12 @@ function update() {
         //done loading assets
         //now update ImageDef to now hold image sections associated with loaded assets.
         ImageDef.convert(MyAssetLoader.assets);
+        
+        //set a context2D for all rendercomponents to use by default
+        Engine.RenderComponent.setDefaultContext2D(CM.Context.main);
+
+        //initialize entity grid whose memory taken should never change...
+        Engine.PhysicsComponent.initEntityGrid();
 
         Engine.State.queueState(MySettings.GameStateID.LoadWorld);
     }

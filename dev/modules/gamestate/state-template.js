@@ -1,4 +1,4 @@
-import * as Engine from "/engine/engine.js";
+import * as Engine from "../engine/engine.js";
 function onEnter(from) {
 
 }

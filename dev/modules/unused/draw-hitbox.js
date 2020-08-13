@@ -1,3 +1,5 @@
+//should be in ENGINE not outside...
+
 //not done f.
 import * as Engine from "../../engine/engine.js";
 import * as DEBUG_PhysicsComponent from "../../engine/entity/physics-component.js";
@@ -58,4 +60,4 @@ function drawHitboxesOfPC(context, pc, color, camera, zoom) {
     });
 }
 
-export { drawHitboxes };
+//export { drawHitboxes };

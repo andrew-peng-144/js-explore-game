@@ -1,17 +1,26 @@
 //component to attach to gameentity that responds to mouse or keyboard.
 
-function InputComponent() {
+function InputComponent(id) {
+    if (typeof id !== "number") {
+        throw "YES";
+    }
+    if (inputComponents.has(id)) {
+        throw id + " already has a inputcomponent.";
+    }
     //this.cases = {};
+    this.entityID = id;
     this.keyCallback = null;
     this.mouseCallback = null;
+
+    inputComponents.set(id, this);
 }
 
 
 var initializedKeyListener = false;
 /**
- * @type {InputComponent[]}
+ * @type {Map<Number, InputComponent>}
  */
-var inputComponents = new Set();
+var inputComponents = new Map();
 
 
 // TODO the sets have rapid add/remove for EVERY INPUT, which will have memory fragmentation over long period of gameplay.
@@ -101,18 +110,18 @@ InputComponent.prototype.setMouseCallback = function (canvas, func) {
     return this;
 }
 
-InputComponent.prototype.remove = function () {
-    inputComponents.delete(this);
-}
+// InputComponent.prototype.remove = function () {
+//     inputComponents.delete(this);
+// }
+
 
 
 // InputComponent.prototype._update = function () {
 
 // }
 
-function createInputComponent() {
-    let ic = new InputComponent();
-    inputComponents.add(ic);
+function create(id) {
+    let ic = new InputComponent(id);
     return ic;
 }
 
@@ -142,4 +151,8 @@ function getCount() {
     return inputComponents.size;
 }
 
-export { createInputComponent, updateAll, getCount }
+function remove(id) {
+    inputComponents.delete(id);
+}
+
+export { create, updateAll, getCount, remove }

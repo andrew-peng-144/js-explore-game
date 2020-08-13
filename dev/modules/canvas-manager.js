@@ -6,7 +6,7 @@ var Context = {
     gui, main, bkgd//, propBkgd, entity, propFrgd
 }
 function getWoCtx(canvas) {
-    var ctx = canvas.getContext('2d');
+    var ctx = canvas.getContext('2d', { alpha: false });
     ctx.imageSmoothingEnabled = false;
     return ctx;
 }

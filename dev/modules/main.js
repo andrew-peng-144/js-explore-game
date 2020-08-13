@@ -1,5 +1,5 @@
 //use ma engine
-import * as Engine from "/dev/engine/engine.js";
+import * as Engine from "../engine/engine.js";
 
 import * as MainState from "./gamestate/mainstate.js";
 import * as FirstLoadState from "./gamestate/firstloadstate.js";
@@ -26,7 +26,7 @@ function addMyGameState(id, myGameState, cuu = true) {
         .setCatchUpUpdates(cuu);
 }
 
-addMyGameState(MySettings.GameStateID.Main, MainState);
+addMyGameState(MySettings.GameStateID.Main, MainState, false);
 addMyGameState(MySettings.GameStateID.FirstLoad, FirstLoadState, false);
 addMyGameState(MySettings.GameStateID.LoadWorld, LoadWorldState, false);
 
@@ -35,5 +35,7 @@ addMyGameState(MySettings.GameStateID.LoadWorld, LoadWorldState, false);
 //Engine.Startup.setAssetPaths(assetsArr);
 //Engine.Startup.setStartingState(GameStateID.Main);
 Engine.Startup.setStartingState(MySettings.GameStateID.FirstLoad);
+
+
 
 Engine.start();
