@@ -37,14 +37,14 @@ let id_Data0 = {
 
 
     //Grass-water
-    11: type.TOP,
-    26: type.LEFT,
-    28: type.RIGHT,
-    43: type.BOTTOM,
-    13: type.RIGHT | type.BOTTOM,
-    14: type.LEFT | type.BOTTOM,
-    29: type.RIGHT | type.TOP,
-    30: type.LEFT | type.TOP,
+    11: type.DOWN,
+    26: type.RIGHT,
+    28: type.LEFT,
+    43: type.UP,
+    13: type.LEFT | type.UP,
+    14: type.RIGHT | type.UP,
+    29: type.LEFT | type.DOWN,
+    30: type.RIGHT | type.DOWN,
     idk: ""
 
 }

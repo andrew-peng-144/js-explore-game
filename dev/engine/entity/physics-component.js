@@ -1,13 +1,5 @@
 import * as Engine from "../engine.js";
 /*
-MAJOR REVISIONS:
-Fixed-grid based collision detection among PCs.
-consolidate all PCs into a single list
-
-There is also SOLID TERRAIN derived from the IDs in the tilemap.
-Which are lines and squares SNAPPED to the grid. These are not entities.
-
-There are no solid entities.
 
 future additions:
 easy querying
@@ -98,15 +90,15 @@ var terrain_mapArr = null;
 //like 0000 to 1111, being top,right,bottom,left respectively, 1 being solid in that direction 0 being nothing
 //then collision can just check (type & 0001) or (type & 0010) etc to resolve specific edges.
 /**
- * TOP means the tile has a collision edge at the BOTTOM of it
- * RIGHT means the tile has a collision edge at the LEFT
+ * TOP means the tile has a collision edge at the top with a normal pointing UP
+ * RIGHT means the tile has a collision edge on the right with a normal pointing RIGHT
  */
 const terrain_wall_type = {
     SQUARE: 100,
-    TOP: 8,  //1000
-    RIGHT: 4, //0100
-    BOTTOM: 2, //0010
-    LEFT: 1, //0001
+    DOWN: 8,  //1000
+    LEFT: 4, //0100
+    UP: 2, //0010
+    RIGHT: 1, //0001
 
     // TOP_RIGHT: 8,
     // BOTTOM_RIGHT: 9,
@@ -119,6 +111,7 @@ const terrain_wall_type = {
 }
 /**
  * an object where: properties are the tile ID's, and the value is a Terrain Wall Type (number)
+ * This CAN be modified over time, (e.g. breaking a wall) which should set edges to where static objects get added or removed.
  * 
  * @type {Object.<number,number>}
  */
@@ -299,18 +292,6 @@ function CircleHitbox(xCenter, yCenter, r) {
 
 }
 
-// PhysicsComponent.prototype.remove = function () {
-//     //physicsComps.delete(this);
-
-//     // let list = physics_comps;
-//     // let i = list.indexOf(this);
-//     // if (i > -1) {
-//     //     list.splice(i, 1);
-//     // }
-
-//     //delete physics_comps[this.entityID];
-// }
-
 function create(entityID) {
     return new PhysicsComponent(entityID);
 }
@@ -342,17 +323,6 @@ function get(entityID) {
 function initEntityGrid() {
     console.log("Init Grid start: " + Date.now());
 
-    // ent_grid = new Array();
-    // let col = 0, cell = 0;
-    // let arrOfBuckets;
-    // for (col = 0; col < ENT_GRID_WIDTH_T; col++) {
-    //     arrOfBuckets = new Array();
-    //     for (cell = 0; cell < ENT_GRID_HEIGHT_T; cell++) {
-    //         arrOfBuckets.push(new Bucket(ENT_MAX_PER_CELL));
-    //     }
-    //     ent_grid.push(arrOfBuckets);
-    // }
-
     ent_grid = {};
     let i = 0, j = 0;
     for (i = 0; i < ENT_GRID_WIDTH_T; i++) {
@@ -365,8 +335,13 @@ function initEntityGrid() {
     debugger;
 }
 
-
-
+/**
+ * Adds a static area to the WORLD.
+ * TODO: use an algorithm to "smooth out" edges: e.g. add a wall on the left only if nothing is on the right
+ */
+function addStaticBox() {
+    terrain_idData
+}
 
 /**
  * The only "call-every-frame" function relating to physics components...
@@ -400,7 +375,6 @@ function updateAll() {
     //visitedCells.clear();
 
     //first: for each PC, check if it's completely within the grid bounds, then move it, then RESOLVE w/ terrain, then add it to grid based on its bounds after the move & resolve.
-
 
     //for (let i = 0; i < physics_comps.length; i++) {
     //physics_comps.forEach((pc, id, map) => {
@@ -482,59 +456,34 @@ function updateAll() {
                         }
                         //debugger;
 
-
-                        // //bitmask check the tile's direction
-                        // //and record the minimum displacement
-                        // let minDisp = 100;
-                        // let dispDirection = 0; //0, 1, 2, 3 is top,left,bot,right
-                        // if (idData & terrain_wall_type.TOP) {
-                        //     if ()
-                        // }
-
-
                         switch (idData) {
-                            case terrain_wall_type.SQUARE:
-                                // //check wat side (corner cells will fit 2 cases)
-                                // if (tx === pc_x_min_tilemap) {
-                                //     numWallsLeft++;
-                                // }
-                                // if (tx === pc_x_max_tilemap) {
-                                //     numWallsRight++;
-                                // }
-                                // if (ty === pc_y_min_tilemap) {
-                                //     numWallsTop++;
-                                // }
-                                // if (ty === pc_y_max_tilemap) {
-                                //     numWallsBot++;
-                                // }
-                                break;
 
                             //line cases: resolve NOW in respective direction, while checking it is actually inthat direction
-                            case terrain_wall_type.TOP:
+                            case terrain_wall_type.DOWN:
                                 if (ty === pc_y_min_tilemap) {
                                     //push down
                                     hitbox._yMin = (pc_y_min_tilemap + 1) * CELLSIZE;
                                 }
                                 break;
-                            case terrain_wall_type.LEFT:
+                            case terrain_wall_type.RIGHT:
                                 if (tx === pc_x_min_tilemap) {
                                     //push right
                                     hitbox._xMin = (pc_x_min_tilemap + 1) * CELLSIZE;
                                 }
                                 break;
-                            case terrain_wall_type.RIGHT:
+                            case terrain_wall_type.LEFT:
                                 if (tx === pc_x_max_tilemap) {
                                     //push left
                                     hitbox._xMin = pc_x_max_tilemap * CELLSIZE - hitbox._width - 0.01; //tiny amount to avoid persistent collision
                                 }
                                 break;
-                            case terrain_wall_type.BOTTOM:
+                            case terrain_wall_type.UP:
                                 if (ty === pc_y_max_tilemap) {
                                     //push up
                                     hitbox._yMin = pc_y_max_tilemap * CELLSIZE - hitbox._height - 0.01;
                                 }
                                 break;
-                            case terrain_wall_type.TOP | terrain_wall_type.RIGHT:
+                            case terrain_wall_type.DOWN | terrain_wall_type.LEFT:
                                 // |__
                                 if (ty === pc_y_min_tilemap || tx === pc_x_max_tilemap) {
                                     //correct location rel to player
@@ -553,7 +502,7 @@ function updateAll() {
                                     
                                 }
                                 break;
-                            case terrain_wall_type.TOP | terrain_wall_type.LEFT:
+                            case terrain_wall_type.DOWN | terrain_wall_type.RIGHT:
                                 //  __|
 
                                 if (ty === pc_y_min_tilemap || tx === pc_x_min_tilemap) {
@@ -566,7 +515,7 @@ function updateAll() {
                                     }
                                 }
                                 break;
-                            case terrain_wall_type.BOTTOM | terrain_wall_type.RIGHT:
+                            case terrain_wall_type.UP | terrain_wall_type.LEFT:
                                 //  __
                                 // |
                                 if (ty === pc_y_max_tilemap || tx === pc_x_max_tilemap) {
@@ -579,7 +528,7 @@ function updateAll() {
                                     }
                                 }
                                 break;
-                            case terrain_wall_type.BOTTOM | terrain_wall_type.LEFT:
+                            case terrain_wall_type.UP | terrain_wall_type.RIGHT:
                                 // __
                                 //   |
                                 if (ty === pc_y_max_tilemap || tx === pc_x_min_tilemap) {
@@ -592,163 +541,10 @@ function updateAll() {
                                     }
                                 }
                                 break;
-                            case terrain_wall_type.BOTTOM_RIGHT:
-                                //HARD
-                                //diagonal case w/ normal: rect v line collision
-
-                                if (true || tx === pc_x_max_tilemap && ty === pc_y_max_tilemap) {
-                                    //this slope is only in the bottom-right-most cell of pc, so resolve diagonally
-                                    debugger;
-                                    //just check aabb's bottom right vertex if it goes "past" the diagonal
-                                    //or do line-line with aabb's right and bot side
-                                    //IDK this misses some...?
-
-                                    //right side
-                                    let pt1 = _lineLineColl(
-                                        hitbox._xMin + hitbox._width,
-                                        hitbox._yMin,
-                                        hitbox._xMin + hitbox._width,
-                                        hitbox._yMin + hitbox._height,
-                                        tx * CELLSIZE,
-                                        (ty + 1) * CELLSIZE,
-                                        (tx + 1) * CELLSIZE,
-                                        ty * CELLSIZE
-                                    )
-
-                                    //bot side
-                                    let pt2 =
-                                        _lineLineColl(
-                                            hitbox._xMin,
-                                            hitbox._yMin + hitbox._height,
-                                            hitbox._xMin + hitbox._width,
-                                            hitbox._yMin + hitbox._height,
-                                            tx * CELLSIZE,
-                                            (ty + 1) * CELLSIZE,
-                                            (tx + 1) * CELLSIZE,
-                                            ty * CELLSIZE
-                                        )
-                                    if (pt1 && pt2) {
-                                        //pt2 always exists if pt2 does?
-
-                                        //COLLIDE!
-                                        //move hitbox in direction of normal, magnitude is the intersection amount.
-                                        //for 45 deg slopes, the intersection magnitude is ALWAYS HALF of the distance b/t the intersection points.
-                                        let dist = Math.sqrt((pt1.x - pt2.x) * (pt1.x - pt2.x) + (pt1.y - pt2.y) * (pt1.y - pt2.y));
-
-                                        //for bottom_right slope, normal is 3pi/4 rad
-                                        hitbox._xMin += dist / 2 * Math.cos(0.75 * Math.PI);
-                                        //y is flipped...
-                                        hitbox._yMin += - dist / 2 * Math.sin(0.75 * Math.PI);
-
-                                        // //set aabb's bottom right to be midpoint of pt1 and pt2
-                                        // let mid = _midpoint(pt1.x, pt1.y, pt2.x, pt2.y);
-                                        // hitbox._xMin = mid.x - hitbox._width;
-                                        // hitbox._yMin = mid.y - hitbox._height;
-
-                                    }
-
-                                }
-                                //  else if (tx === pc_x_max_tilemap) {
-                                //     //treat like wall type RIGHT if this cell is on right
-                                //     hitbox._xMin = pc_x_max_tilemap * CELLSIZE - hitbox._width;
-                                // } else if (ty === pc_y_max_tilemap) {
-                                //     //treat like BOT
-                                //     hitbox._yMin = pc_y_max_tilemap * CELLSIZE - hitbox._height;
-                                // }
-                                break;
-                            //LINE CASES: treat as hard wall if the line is the respective side
-                            // case terrain_wall_type.TOP:
-                            //     //if a "top wall" is on a cell in the TOP ROW of the pc, it's like a square is above
-                            //     if (ty === pc_y_min_tilemap) {
-                            //         numWallsTop++;
-                            //     }
-                            //     break;
-                            // case terrain_wall_type.LEFT:
-                            //     if (tx === pc_x_min_tilemap) {
-                            //         numWallsLeft++;
-                            //     }
-                            //     break;
-                            // case terrain_wall_type.RIGHT:
-                            //     if (tx === pc_x_max_tilemap) {
-                            //         numWallsRight++;
-                            //     }
-                            //     break;
-                            // case terrain_wall_type.BOTTOM:
-                            //     if (ty === pc_y_max_tilemap) {
-                            //         numWallsBot++;
-                            //     }
-                            //     break;
-                            //TODO SLOPE cases
                         }
                     }
                     //end bounding cell loop
                 }
-
-                //DONE CHECKING ALL BOUNDING CELLS. Resolve based on results:
-
-                //>=2 walls detected on one side: RESOLVE that side.
-                //(This is done before the 1-wall cases b/c 2 walls has priority or else could get stuck)
-                // let xRes = false;
-                // let yRes = false;
-                // if (numWallsTop >= 2) {
-                //     //resolve by pushing DOWN to align with the bottom
-                //     debugger;
-                //     hitbox._yMin = (pc_y_min_tilemap + 1) * CELLSIZE;
-                //     yRes = true;
-                // }
-                // if (numWallsRight >= 2) {
-                //     //push to left
-                //     //PERSISTENT COLLISON b/c it doesn't actually get fully pushed out of the cell
-                //     //and floor() is used to convert world to cell, so this only happens to Bot (push up) and Right (push left) cases
-                //     hitbox._xMin = pc_x_max_tilemap * CELLSIZE - hitbox._width;
-                //     xRes = true;
-                // }
-                // if (numWallsBot >= 2) {
-                //     //push upward
-                //     debugger;
-                //     hitbox._yMin = pc_y_max_tilemap * CELLSIZE - hitbox._height;
-                //     yRes = true;
-                // }
-                // if (numWallsLeft >= 2) {
-                //     //push right
-                //     hitbox._xMin = (pc_x_min_tilemap + 1) * CELLSIZE;
-                //     xRes = true;
-                // }
-                // //1 wall: do normal rect-solidity res:
-                // // else {
-                // //     _resolvePCSquare(pc, )
-                // // }
-
-                // // //1 wall: do same thing
-                // if (!yRes && !xRes) {
-                //     if (!yRes) {
-                //         if (numWallsTop >= 1) {
-                //             hitbox._yMin = (pc_y_min_tilemap + 1) * CELLSIZE;
-                //         }
-                //         if (numWallsBot >= 1) {
-                //             hitbox._yMin = pc_y_max_tilemap * CELLSIZE - hitbox._height;
-                //         }
-                //     }
-                //     if (!xRes) {
-                //         if (numWallsRight >= 1) {
-                //             hitbox._xMin = pc_x_max_tilemap * CELLSIZE - hitbox._width;
-                //         }
-                //         if (numWallsLeft >= 1) {
-                //             hitbox._xMin = (pc_x_min_tilemap + 1) * CELLSIZE;
-                //         }
-                //     }
-                // }
-
-                // if (numWallsBot >= 1 || numWallsLeft >= 1 || numWallsRight >= 1 || numWallsTop >= 1) {
-                //     console.log("RESOLVED SOLIDITY!");
-                // }
-
-                //[not applicable rn] if the p.c's hitbox is non-rectangular, do narrow phase while treating that side as a smooth wall
-
-                //for slopes, do narrow phase. (line-rect collision)
-                // TODO slopes
-
-
                 //END SOLIDITY RESOLUTION
             }
 
@@ -781,7 +577,6 @@ function updateAll() {
                         continue;
                     }
 
-                    //ignore below comment
                     // //first, clear the bucket if this cell HASN'T been visited on this frame yet
                     // //this is to avoid adding to old data
                     // if (!visitedCells.has(currCell)) {
@@ -940,28 +735,7 @@ function _midpoint(x1, y1, x2, y2) {
     return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
 }
 
-/**
- * RIP REEEEEEEEEEEEE!
- * Resolve solidity between a PC's rect hitbox and a single square on the tilemap
- * @param {PhysicsComponent} pc
- * @param {Number} sqX the x coord of the square IN WORLD COORDS NOT TILE
- */
-function _resolvePCSquare(pc, sqX, sqY, sqW = 16, sqH = 16) {
-    //debugger;
-    let intersectionX = sqX > pc.getAABBX() ? sqX - (pc.getAABBX() + pc.getAABBWidth()) : (sqX + sqW) - pc.getAABBX();
-    let intersectionY = sqY > pc.getAABBY() ? sqY - (pc.getAABBY() + pc.getAABBHeight()) : (sqY + sqH) - pc.getAABBY();
 
-    //smaller magnitude one wins
-    if (Math.abs(intersectionX) < Math.abs(intersectionY)) {
-        //shift in X
-        pc._hitbox._xMin += intersectionX;
-    } else {
-        //shift in Y
-        pc._hitbox._yMin += intersectionY;
-    }
-
-
-}
 
 // /**
 //  * given coordinates in tiles, check the data of that tile.
@@ -1091,7 +865,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             //     //ctx.fillRect(scx, scy, CELLSIZE * zoom, CELLSIZE * zoom);
             //     break;
             //case terrain_wall_type.TOP:
-            if (data & terrain_wall_type.TOP) {
+            if (data & terrain_wall_type.DOWN) {
                 //may be inefficient as it draws lines individually but some may not be connected so...
                 ctx.beginPath();
                 ctx.moveTo(scx, scy + CELLSIZE * zoom);
@@ -1100,7 +874,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             }
             //break;
             //case terrain_wall_type.RIGHT:
-            if (data & terrain_wall_type.RIGHT) {
+            if (data & terrain_wall_type.LEFT) {
                 ctx.beginPath();
                 ctx.moveTo(scx, scy);
                 ctx.lineTo(scx, scy + CELLSIZE * zoom);
@@ -1108,7 +882,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             }
             // break;
             //case terrain_wall_type.BOTTOM:
-            if (data & terrain_wall_type.BOTTOM) {
+            if (data & terrain_wall_type.UP) {
                 ctx.beginPath();
                 ctx.moveTo(scx, scy);
                 ctx.lineTo(scx + CELLSIZE * zoom, scy);
@@ -1116,7 +890,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             }
             //break;
             //case terrain_wall_type.LEFT:
-            if (data & terrain_wall_type.LEFT) {
+            if (data & terrain_wall_type.RIGHT) {
                 ctx.beginPath();
                 ctx.moveTo(scx + CELLSIZE * zoom, scy);
                 ctx.lineTo(scx + CELLSIZE * zoom, scy + CELLSIZE * zoom);
