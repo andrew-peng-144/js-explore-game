@@ -1,17 +1,39 @@
 import * as Engine from "../engine/engine.js";
 //EMBRACE THE GRID!
 
-//The tilemap is made of many different tiles, each with their own ID. Which is an integer (either starting from 0 or 1)
+//Each tilemap has a reference to a TileSET. This Tileset lays out the possible tiles that may be drawn on the tilemap.
+
+//When loading a new area:
+/*
+need the tilemap JSON file name
+The JSON file should have these associated with it:
+tileset image file name (or could have entire game use the same tileset...)
+gid to object (or could have entire game use the same object tileset...)
+
+*/
+
+// /**
+//  * Associates a tiledmap JSON file to its tileset and object map
+//  */
+// let wow = {
+//     "wowo.json": {set: "tileset.png", gti: gti.ow},
+// }
+
+//maps the gIDs to image filenames ("object map")
+let gti = {
+    257: "smalltree.png",
+    258: "tree.png"
+
+}
+
+// //maps the tileset to the solidity data of each ID
+// let tsd = {
+//     "tileset.png":id_Data0
+// }
+
+//The tilemap data has a long list of tile IDs.
 
 //Each tile ID is not just an image, but also associates with some data. Ex: solidity, terrain type.
-
-//ASSUME:
-//solid = false
-//terrain = idk?
-
-//Tiles can either be a SURFACE or be a filled SQUARE. Both are "solid" meaning entities will collide and resolve with them.
-//For surfaces, Yes.
-//For squares, a "wall" will be detected around the AABB and it will try to move away from the "wall", avoiding the entity getting stuck on square boundaries.
 
 // function Line(x1, y1, x2, y2) {
 //     return {x1: x1, y1: y1, x2: x2, y2: y2}
@@ -65,4 +87,4 @@ for (const id in id_Data0) {
     id_data[parseInt(id) + 1] = id_Data0[id];
 }
 
-export {id_data};
+export { id_data, gti };

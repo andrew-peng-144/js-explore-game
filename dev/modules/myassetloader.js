@@ -43,8 +43,15 @@ function getNumAssets() {
     return numAssets;
 }
 
+/**
+ * 
+ * @param {String} pathStr the full path. ex: ./assets/images/tileset.png
+ */
 function getAsset(pathStr) {
-    return assets[pathStr];
+    if (assets[pathStr]) {
+        return assets[pathStr];
+    }
+    throw "no asset";
 }
 
 export { assets, getAsset, loadAssets, getNumAssets };

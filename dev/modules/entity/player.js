@@ -50,9 +50,15 @@ let init = function (camera, initX = 0, initY = 0) {
     let playerController = { dx: 0, dy: 0 }
     let playerHitboxWidth = 8;
     let playerHitboxHeight = 12;
+
+    //let player_prev_pos = { x: 0, y: 0 };
+    let slideToSetTo = 0;
+
+    let playerAnimCounter = Engine.Counter.create();
     let pc = Engine.PhysicsComponent.create(eID)
         .setRectangleHitbox(initX, initY, playerHitboxWidth, playerHitboxHeight)
         .setControlFunc(() => {
+
             playerController.dx = player_speed * Math.cos(player_direction);
             playerController.dy = player_speed * Math.sin(player_direction);
             return playerController;
@@ -60,13 +66,75 @@ let init = function (camera, initX = 0, initY = 0) {
         .setOnCollideFunc((type, data) => {
 
         })
-        .setCollisionDataFunc(() => { return "u hit the player lmfao"; });
+        .setCollisionDataFunc(() => { return "u hit the player lmfao"; })
+        .setPostMoveUpdate((dx, dy) => {
+            // if (Engine.getFramesElapsed() % 30 === 0) {
+            //     console.log("player dx: " + dx + ", dy: " + dy);
+            // }
+
+            if (dx === 0 && dy === 0) {
+                //didn't move... keep prev direction but keep it rendering the "idle" state of the anim (2nd slide for player (index 1))
+                rc.setSlide(1);
+                return;
+            }
+
+
+            //set the correct moving sprite direction based on true direction of movement.
+            let dir = Math.atan2(dy, dx); //inverted y axis means unitcircle goes clockwise from (1,0). atan2 returns (-pi, pi]
+            if (dir > -Math.PI / 4 && dir < Math.PI / 4) {
+                //right
+                handleDir(4);
+            }
+            else if (dir >= Math.PI / 4 && dir <= 3 * Math.PI / 4) {
+                //down (closed interval for both checks so exactly down-left and down-right will goto down anim.)
+                handleDir(3);
+            } else if (dir >= -3 * Math.PI / 4 && dir <= -Math.PI / 4) {
+
+                //up
+                handleDir(1);
+            } else {
+                //left
+                handleDir(2);
+            }
+        });
 
     let rc = Engine.RenderComponent.create(eID)
         .setCamera(camera)
-        .setGetSection(() => { return ImageDef.sections().NPC1 })
-        .setGetSlide(() => { return 1; })
+        // .setGetSection(() => { return ImageDef.sections().NPC1 })
+        // .setGetSlide(() => { return slideToSetTo; })
+        .setSection(ImageDef.sections().NPC1)
         .linkPosToPhysics(pc, 0, -7);
+
+    let prevDir = 0; //up left down right 1234
+    let handleDir = function (dir) {
+        if (dir !== prevDir) {
+            //dir changed. reset timer and do new dir
+            playerAnimCounter.lap();
+            rc.setSlide(0);
+            switch (dir) {
+                case 1:
+                    rc.setSection(ImageDef.sections().NPC1_WALKING_NORTH);
+                    break;
+                case 2:
+                    rc.setSection(ImageDef.sections().NPC1_WALKING_WEST);
+                    break;
+                case 3:
+                    rc.setSection(ImageDef.sections().NPC1_WALKING_SOUTH);
+                    break;
+                case 4:
+                    rc.setSection(ImageDef.sections().NPC1_WALKING_EAST);
+                    break;
+
+            }
+        } else {
+            //same dir. continue going thru slides
+            rc.setSlide(playerAnimCounter.get() / 8);
+        }
+        prevDir = dir;
+    }
+    let gotoIdle = function () {
+
+    }
 
     // let pc = Engine.Entity.PhysicsComponent.newOptions()
     //     .addRectHitbox(0, 0, 10, 10, 0, 1)
@@ -200,13 +268,14 @@ function shootBullet() {
         .setRectangleHitbox(Engine.PhysicsComponent.get(eID).getAABBX(), Engine.PhysicsComponent.get(eID).getAABBY(), 5, 5);
     Engine.RenderComponent.create(bul)
         .linkPosToPhysics(pc)
-        .setGetSection(() => {return ImageDef.sections().BLUE_ORB});
+        .setSection(ImageDef.sections().BLUE_ORB);
+    //.setGetSection(() => { return ImageDef.sections().BLUE_ORB });
 
-        
-        
-        
-    
-    
+
+
+
+
+
     // let bul = Engine.Entity.createEntity(getEntityX(), getEntityY())
     //     .withPhysicsComponent(Engine.Entity.PhysicsComponent.newOptions()
     //         .addRectHitbox(100, 0, 5, 5, 1)
@@ -319,6 +388,20 @@ function playerMouseCallback(mousePos, mouseButtonsDown, just) {
 function getEntityID() {
     return eID;
 }
+
+/**
+ * Player GameEntity must have been initialized.
+ * This is an unoptimized function that immediately sets the player's AABB to the world coordinates specified.
+ * Typically this is only called at the beginning when the map loads
+ * @param {*} x 
+ * @param {*} y 
+ */
+function setLocation(x, y) {
+    Engine.PhysicsComponent.get(eID)
+        ._hitbox._xMin = x;
+    Engine.PhysicsComponent.get(eID)
+        ._hitbox._yMin = y;
+}
 // function getEntityX() {
 //     return entity.getX();
 // }
@@ -326,4 +409,4 @@ function getEntityID() {
 //     return entity.getY();
 // }
 
-export { init, getEntityID };
+export { init, getEntityID, setLocation };

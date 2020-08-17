@@ -8,10 +8,13 @@ import * as ImageDef from "../imagedef.js";
 //that loads essential things for startup
 //like all assets.
 let str = "./assets/images/";
-let assetsArr = [str + "sprites.png", str + "tileset.png", str + "props.png"];
+let assetsArr = [
+    str + "sprites.png", str + "tileset.png", str + "props.png",
+    str + "objects/smalltree.png", str + "objects/tree.png"
+];
 let numAssets = assetsArr.length;
 let numLoaded = 0;
-function onEnter(from) {
+function onEnter(from, data) {
     //first state in the game so param "from" will be null
 
     //init simple stuff
@@ -36,7 +39,7 @@ function update() {
         //done loading assets
         //now update ImageDef to now hold image sections associated with loaded assets.
         ImageDef.convert(MyAssetLoader.assets);
-        
+
         //set a context2D for all rendercomponents to use by default
         Engine.RenderComponent.setDefaultContext2D(CM.Context.main);
 

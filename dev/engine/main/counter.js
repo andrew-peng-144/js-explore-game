@@ -63,7 +63,7 @@ Counter.prototype.reset = function () {
     this.timePaused = 0;
 }
 /**
- * Reset the timer, records the time passed. and then start it back up.
+ * Reset the timer, and then starts it back up.
  * Returns the time passed.
  */
 Counter.prototype.lap = function () {

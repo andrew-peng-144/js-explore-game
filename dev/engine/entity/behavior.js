@@ -19,8 +19,8 @@ function updateAll() {
         b();
     });
 }
-function remove(func) {
-    behaviors.delete(func);
+function remove(id) {
+    behaviors.delete(id);
 }
 
 function getCount() {

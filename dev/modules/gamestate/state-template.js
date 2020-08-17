@@ -1,5 +1,5 @@
 import * as Engine from "../engine/engine.js";
-function onEnter(from) {
+function onEnter(from, data) {
 
 }
 function onExit(to) {

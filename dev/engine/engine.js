@@ -83,20 +83,6 @@ function start2() {
         throw "Need at least one game state. Call Startup.createGameState(id) and use .set methods to set update, onenter, onexit";
     }
 
-    // //CHANGED - user now handles all their own assets.
-    // //Directly start the loop now.
-
-    // //lastly load assets.
-    // //if this takes too long then maybe add a "AssetLoading" state in the beginning before the menu state.
-
-    // if (Array.isArray(assetNames) && typeof assetNames[0] === "string") {
-
-    //     AssetLoader.loadAssets(assetNames, startLoop);
-    // } else {
-    //     console.log("Warning: no assets")
-    //     startLoop();
-    // }
-
     startLoop();
 }
 
@@ -167,21 +153,6 @@ function getFramesElapsed() { return framesElapsed; }
 function getFramesSkipped() {return framesSkipped;}
 function getNumUpdates() { return updates; }
 
-// // let withCanvas = function (canvas, id) {
-// //     CanvasManager.addCanvas(canvas, id);
-// //     //return ConfigControl;
-// // }
-// let setAssetPaths = function (arr) {
-
-//     if (arr.constructor.name !== "Array" || arr[0] && typeof arr[0] !== "string") {
-//         throw "aint an array of strings";
-//     }
-//     assetNames = arr;
-//     //return ConfigControl;
-// }
-
-
-
 // unneeded cuz creategamestate is what users uses to create and it puts the state into the system anyway.
 // Config.setGameStates = function(...states) {
 //     states.forEach(state => {
@@ -201,38 +172,6 @@ let Startup = {
     //setAssetPaths: setAssetPaths,
     setStartingState: GameState.setStartingState
 }
-
-// /**
-//  * Namespace holding all methods related to entities.
-//  */
-// let Entity = {
-//     createEntity: GameEntity.createEntity,
-//     queueRemoval: GameEntity.queueRemoval,
-//     // updateInputComponents: InputComponent.updateAll,
-//     // //updateKinematicComponents: KinematicComponent.updateAll,
-//     // //handleHitboxCollisions: Hitbox.checkForCollisions,
-//     // drawRenderComponents: RenderComponent.drawAll,
-//     // updatePhysics: PhysicsComponent.updateAll,
-//     // updateBehavior: Behavior.updateAll,
-
-//     // newPhysicsOptions: PhysicsComponent.newOptions,
-
-//     // createInputComponent: InputComponent.createInputComponent, 
-
-//     // countPhysics: PhysicsComponent.getCount,
-//     // countRender: RenderComponent.getCount,
-//     // countInput: InputComponent.getCount,
-//     // countBehavior: Behavior.getCount,
-
-//     //TODO have factory methods stuff for the rest of the comps. cleaner.
-//     PhysicsComponent: PhysicsComponent,
-//     RenderComponent: RenderComponent,
-//     InputComponent: InputComponent,
-//     Behavior: Behavior,
-
-//     updateAll: updateAll,
-//     drawAll: drawAll
-// }
 
 /**
  * Namespace holding all methods related to the GameState

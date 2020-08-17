@@ -85,10 +85,10 @@ var ent_grid_getCenter = null;
  */
 var terrain_mapArr = null;
 
+//TODO STATIC!!!!!!!!!!!!!!!!
+//Static PC's should be added to some static grid (like terrain_mapArr) that DOESN'T CHANGE (or rarelt- can "break a block")
+//and any non-static PC can just check neighboring cells, then narrow phase to resolve
 
-//TODO COULD BITMASK different combinations of square boundaries.
-//like 0000 to 1111, being top,right,bottom,left respectively, 1 being solid in that direction 0 being nothing
-//then collision can just check (type & 0001) or (type & 0010) etc to resolve specific edges.
 /**
  * TOP means the tile has a collision edge at the top with a normal pointing UP
  * RIGHT means the tile has a collision edge on the right with a normal pointing RIGHT
@@ -111,7 +111,6 @@ const terrain_wall_type = {
 }
 /**
  * an object where: properties are the tile ID's, and the value is a Terrain Wall Type (number)
- * This CAN be modified over time, (e.g. breaking a wall) which should set edges to where static objects get added or removed.
  * 
  * @type {Object.<number,number>}
  */
@@ -173,7 +172,6 @@ Bucket.prototype.reset = function () {
 
 
 
-
 function PhysicsComponent(id) {
     if (typeof id !== "number") {
         throw "YES";
@@ -186,6 +184,7 @@ function PhysicsComponent(id) {
     this._control = null; //function setting the velocity of this
     this._onCollide = null; //collision handling function for this entity.
     this._getCollisionData = null; //function that returns data for collision...
+    this._postMove = null;
 
     //FOR NOW WE ARE NOT DOING SOLIDITY. BECAUSE TERRAIN IS SOLID. NO ENTITY IS. Any physical interaction with entities will be through "knockback-on-touch" rip
     //for now I can't think of an instance where making an entity like a solid block that can push other entities analog-ly is a good idea.
@@ -215,7 +214,7 @@ PhysicsComponent.prototype.setOnCollideFunc = function (func) {
 
 /**
  * @param {Function} func a function that returns, in the format {dx:#, dy:#}, the x vel and y vel of this entity on this frame.
- * If this function is successfully executed, it makes the hitbox assumed to be NOT STATIC! for now!
+ * If this function is successfully executed
  */
 PhysicsComponent.prototype.setControlFunc = function (func) {
     if (typeof func !== "function") {
@@ -241,6 +240,16 @@ PhysicsComponent.prototype.setCollisionDataFunc = function (func) {
     return this;
 }
 
+/**
+ * Sets a function that gets called every update, with the displacement of the entity (including solidity resolution) passed in as the 1st and 2ng arg as dx and dy.
+ */
+PhysicsComponent.prototype.setPostMoveUpdate = function (func) {
+    if (typeof func !== "function") {
+        throw "AAA";
+    }
+    this._postMove = func;
+    return this;
+}
 
 //data retrieval methods
 /**
@@ -301,8 +310,12 @@ function create(entityID) {
  */
 function remove(entityID) {
     //physics_comps.delete(entityID);
-    delete physics_comps[entityID];
-    num_PCs--;
+    if (physics_comps[entityID]) {
+        delete physics_comps[entityID];
+        num_PCs--;
+    } else {
+        console.log("REMOVE FAILED");
+    }
 }
 
 function get(entityID) {
@@ -335,13 +348,25 @@ function initEntityGrid() {
     debugger;
 }
 
-/**
- * Adds a static area to the WORLD.
- * TODO: use an algorithm to "smooth out" edges: e.g. add a wall on the left only if nothing is on the right
- */
-function addStaticBox() {
-    terrain_idData
-}
+// Unneeded for now because solid objects are all handled on creation not dynaically
+// /**
+//  * Adds a static, SOLID area to the WORLD, but will SNAP to the tilemap grid.
+//  * @param {Number} wx The WORLD x-coord of the area to make static & solid
+//  * @param {Number} wy The WARUDO y-coord
+//  * @param {Number} width the width of the area to add in world scale (pixels not accounting for zoom)
+//  * TODO: use an algorithm to "smooth out" edges: e.g. add a right-wall only if nothing is on the right
+//  */
+// function setStaticBox(wx, wy, width = CELLSIZE, height = CELLSIZE) {
+//     //directly modify the terrain data to now have this new location be static
+//     let tx = _worldToTilemapCoord(wx);
+//     let ty = _worldToTilemapCoord(wy);
+//     for (let i = 0; i < width / CELLSIZE; i++) {
+//         for (let j = 0; j < height / CELLSIZE; j++) {
+//             terrain_idData[(tx + i) + terrain_mapWidth * (ty + j)] = 15; //0b1111 (square) (for now) (will have sticky corners)
+
+//         }
+//     }
+// }
 
 /**
  * The only "call-every-frame" function relating to physics components...
@@ -395,17 +420,21 @@ function updateAll() {
         //IMPORTANT: hitbox must be fully within the bounds... will also check again before adding to entityGrid b/c this first check didn't account for the MOVE
 
         //debugger;
+        let pcOldX = hitbox._xMin;
+        let pcOldY = hitbox._yMin;
         if (hitbox._xMin >= ent_grid_xMin_t * CELLSIZE
             && hitbox._yMin >= ent_grid_yMin_t * CELLSIZE
             && hitbox._xMin + hitbox._width < (ent_grid_xMin_t + ENT_GRID_WIDTH_T) * CELLSIZE
             && hitbox._yMin + hitbox._height < (ent_grid_yMin_t + ENT_GRID_HEIGHT_T) * CELLSIZE) {
 
 
-            //move it
-            ctr = pc._control();
-            hitbox._xMin += ctr.dx || 0;
-            hitbox._yMin += ctr.dy || 0;
+            //move it (if control is defined)
+            if (pc._control) {
+                ctr = pc._control();
 
+                hitbox._xMin += ctr.dx || 0;
+                hitbox._yMin += ctr.dy || 0;
+            }
             /**
              * x coord of the MOVED pc in tilemap cell coords
              */
@@ -435,7 +464,7 @@ function updateAll() {
                 let numWallsLeft = 0;
                 let tx = 0, ty = 0;
 
-                //check all bounding cells for solid terrain:
+                //check all bounding cells for solid terrain: //(TODO OR STATIC OBJECTS?)
                 //>2 SQUARES on a side means immediately move it & done. (for now -- algorithm can be improved)
                 //>2 squares on any side means move it 
                 //debugger;
@@ -490,7 +519,7 @@ function updateAll() {
 
 
                                     //check whether intersecting the topwall or the rightwall is greater disp. (make sure both are positive numbers)
-                                    
+
                                     if ((ty + 1) * CELLSIZE - hitbox._yMin < hitbox._xMin + hitbox._width - (tx) * CELLSIZE) {
                                         //top won (is smaller) (Default) so push down
                                         hitbox._yMin = (pc_y_min_tilemap + 1) * CELLSIZE;
@@ -499,7 +528,7 @@ function updateAll() {
                                         hitbox._xMin = pc_x_max_tilemap * CELLSIZE - hitbox._width - 0.01;
                                     }
 
-                                    
+
                                 }
                                 break;
                             case terrain_wall_type.DOWN | terrain_wall_type.RIGHT:
@@ -547,6 +576,8 @@ function updateAll() {
                 }
                 //END SOLIDITY RESOLUTION
             }
+
+            // pc.postMove();
 
 
             //START ADDING TO ENTITY GRID (has different bounds than tilemap if not at 0,0)
@@ -600,7 +631,9 @@ function updateAll() {
 
         // //end of physiccomps.forEach for solidity resolution
         //});
-
+        if (typeof pc._postMove === "function") {
+            pc._postMove(hitbox._xMin - pcOldX, hitbox._yMin - pcOldY);
+        }
         //end iterating physicsComps
     }
     //solidity resolution done, & all entities in update area added to grid
@@ -834,7 +867,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
 
     ctx.fillStyle = "rgba(200,0,0,0.8)";
     ctx.strokeStyle = 'rgb(0,0,200)';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1;
     //draw Terrain boxes on screen
     //loop thru all tiles that are on screen and check all
     let tx = 0, ty = 0;

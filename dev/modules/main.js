@@ -17,18 +17,20 @@ import * as MySettings from "./mysettings.js";
 
 
 
-function addMyGameState(id, myGameState, cuu = true) {
+function addMyGameState(id, myGameState, name, cuu = true) {
     Engine.Startup.createGameState(id)
         .setUpdate(myGameState.update)
         .setRender(myGameState.render)
         .setOnExit(myGameState.onExit)
         .setOnEnter(myGameState.onEnter)
-        .setCatchUpUpdates(cuu);
+        .setCatchUpUpdates(cuu)
+        .setName(name);
 }
 
-addMyGameState(MySettings.GameStateID.Main, MainState, false);
-addMyGameState(MySettings.GameStateID.FirstLoad, FirstLoadState, false);
-addMyGameState(MySettings.GameStateID.LoadWorld, LoadWorldState, false);
+//TODO gamestate's name needs to be better coupled with ID, or just have name.
+addMyGameState(MySettings.GameStateID.Main, MainState, "main", false);
+addMyGameState(MySettings.GameStateID.FirstLoad, FirstLoadState, "firstload", false);
+addMyGameState(MySettings.GameStateID.LoadWorld, LoadWorldState, "loadworld", false);
 
 
 

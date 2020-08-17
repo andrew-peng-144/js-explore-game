@@ -2,10 +2,11 @@ import * as Engine from "../engine.js";
 //update, (render,) onenter, onexit.
 
 function GameState() {
-    this.update = null;
-    this.render = null;
-    this.onEnter = null;
-    this.onExit = null;
+    this.name = "noname";
+    this._update = null;
+    this._render = null;
+    this._onEnter = null;
+    this._onExit = null;
 
     this._catchUpUpdates = true;
 
@@ -64,10 +65,19 @@ GameState.prototype.setRender = function (func) {
     this.clearEveryFrame = true;
     return this;
 }
+/**
+ * Set the function to call when this state is entered (not immediate, happens at beginning of update)
+ * This function will have two args passed, 1st is a ref to the previous state, 2nd is the data that the prev state passed over (what its onExit returned)
+ */
 GameState.prototype.setOnEnter = function (func) {
     this._onEnter = func;
     return this;
 }
+/**
+ * Set the function to call when this state is exited from (not immediate, happens at beginnign of update)
+ * The function passed in can RETURN data, which the next state can read from in their onEnter().
+ * This function will have 1 arg passed, is a ref to the next state.
+ */
 GameState.prototype.setOnExit = function (func) {
     this._onExit = func;
     return this;
@@ -81,6 +91,14 @@ GameState.prototype.setCatchUpUpdates = function(bool) {
         throw "BRU";
     }
     this._catchUpUpdates = bool;
+    return this;
+}
+
+/**
+ * Set a string to easily identify this state when logging
+ */
+GameState.prototype.setName = function(str) {
+    this.name = str;
     return this;
 }
 
@@ -113,15 +131,19 @@ function handleStateChange() {
     }
 
     let prevState;
+
+    //data to pass from exited state to entered state
+    let passingData = null;
+
     if (queuedState !== null) {
         //switch.
         if (currentState._onExit) {
-            currentState._onExit(queuedState);
+            passingData = currentState._onExit(queuedState);
         }
         prevState = currentState;
         currentState = queuedState;
         if (currentState._onEnter) {
-            currentState._onEnter(prevState);
+            currentState._onEnter(prevState, passingData);
         }
         queuedState = null;
     }
