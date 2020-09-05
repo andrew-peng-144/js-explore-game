@@ -1,6 +1,6 @@
 //A counter that counts up in integers.
 
-import * as Engine from "../engine.js";
+import * as Engine from "../../engine/engine.js";
 
 function Counter() {
     this.startTime = 0; //when this started

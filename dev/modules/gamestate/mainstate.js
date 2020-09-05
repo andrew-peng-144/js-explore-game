@@ -11,8 +11,14 @@ import * as Player from "../entity/player.js";
 
 import * as TileMapData from "../tilemap-data.js";
 
+import * as Element from "../gui/elem.js";
+
 //import * as DrawHitbox from "../misc/draw-hitbox.js";
 import { createMachine } from "../entity/entitystate.js";
+
+import * as Counter from "../misc/counter.js";
+
+import * as Mob from "../entity/mob.js";
 
 //"implments" state "interface"
 
@@ -38,10 +44,22 @@ var nextMapData = {
     json: null,
     node: 0
 };
+let firstEntered = true;
+
+
+//gui instances
+let gui_bot_text = null;
 
 function onEnter(from, data) {
     i_for_counter = 0;
     console.log("entered mainstate from " + from.name);
+
+    //initialize things one-time if first time
+    if (firstEntered) {
+        firstenter();
+        firstEntered = false;
+    }
+
 
     //check if from is loadworld
     //if so, create entities from objects it exported and store refs to them
@@ -120,31 +138,13 @@ function onEnter(from, data) {
         });
     }
 
-    //cam = Engine.Camera2D.createCamera2D();
-    cam = Engine.TileMapRenderer.getCamera();
-    //i mean its just another way to get the same camera... unclean
+    //sigh make above clearner later?
 
+    //create gui shit
+    gui_bot_text = Element.createElement(MySettings.V_WIDTH / 2, 500, 500, 100);
 
-    //out-of-engine pausing:
-    //all actors will freeze, and frame counter for this gamestate will pause too
-    document.addEventListener("keydown", ev => {
-        if (ev.keyCode === KeyCode.P && !myPaused) {
-            myPaused = true;
-            CM.Context.main.fillText('STATE PAUSED (R TO RESUME)', 50, 100);
-        }
-        if (ev.keyCode === KeyCode.R && myPaused) {
-            myPaused = false;
-        }
-    });
-
-    Engine.Counter.setTimeFunction(() => ticksPassed);
-
-    counterTest.start();
-
-    //track mouse position
-    let idkID = Engine.GameEntity.createEntity();
-    Engine.InputComponent.create(idkID)
-        .setMouseCallback(CM.Canvas.main, pos => { mousePos = pos });
+    //mob test
+    Mob.create(3);
 
 
     // for (let i = 0; i < 3; i++) {
@@ -159,7 +159,7 @@ function onEnter(from, data) {
     //         .linkPosToPhysics(Engine.PhysicsComponent.get(rip));
     // }
 
-    // let fireanim = Engine.Counter.createAndStart();
+    // let fireanim = Counter.createAndStart();
 
     // //fire anim test
     // let wow = Engine.GameEntity.createEntity();
@@ -178,10 +178,56 @@ function onEnter(from, data) {
 
 }
 
+function firstenter(data) {
+
+    //THESE THINGS BELOW ARE SET ONE-TIME AT BEGINNING --
+    //NO NEED TO KEEP CREATING EVERY TIME ENTERED THIS STATE (which happens every tilemap change)
+
+
+    //cam = Engine.Camera2D.createCamera2D();
+    cam = Engine.TileMapRenderer.getCamera();
+    //i mean its just another way to get the same camera... unclean
+
+
+    //out-of-engine pausing:
+    //all actors will freeze, and frame counter for this gamestate will pause too
+    document.addEventListener("keydown", ev => {
+        if (ev.keyCode === KeyCode.P && !myPaused) {
+            myPaused = true;
+            CM.Context.main.fillText('STATE PAUSED (R TO RESUME)', 50, 100);
+        }
+        if (ev.keyCode === KeyCode.R && myPaused) {
+            myPaused = false;
+        }
+
+        //LULW guess this can be used for other debug stuff?
+        if (ev.keyCode === KeyCode.F) {
+            //test gui toggle
+            gui_bot_text.display();
+        }
+        if (ev.keyCode === KeyCode.G) {
+            //test gui toggle
+            gui_bot_text.hide();
+        }
+        if (ev.keyCode === KeyCode.H) {
+            //test gui toggle
+            //gui_bot_text.counter.start();
+            gui_bot_text.setMessage("LULWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
+        }
+    });
+
+    Counter.setTimeFunction(() => ticksPassed);
+
+    //track mouse position by creating an entity that updates it
+    let idkID = Engine.GameEntity.createEntity();
+    Engine.InputComponent.create(idkID)
+        .setMouseCallback(CM.Canvas.main, pos => { mousePos = pos });
+
+}
+
 let mousePos;
 
 function onExit(to) {
-    counterTest.reset();
     //remove all entities associated with map
     entities_from_map.forEach(id => {
         Engine.GameEntity.removeNow(id);
@@ -195,8 +241,6 @@ function onExit(to) {
 
 
 let myPaused = false;
-
-let counterTest = Engine.Counter.create();
 
 function update() {
     if (myPaused) {
@@ -229,9 +273,12 @@ function render() {
     //Engine.Entity.drawAll();
     Engine.GameEntity.drawAll();
 
+    //GUIIIIIIII
+    Element.drawAll(CM.Context.main);
+
     //CM.Context.main.fillText('MAIN STATE', 10, 50);
     //DrawHitbox.drawHitboxes(CM.Context.main, cam);
-    Engine.PhysicsComponent.drawDebug(CM.Context.main, cam, MySettings.V_WIDTH, MySettings.V_HEIGHT);
+    //Engine.PhysicsComponent.drawDebug(CM.Context.main, cam, MySettings.V_WIDTH, MySettings.V_HEIGHT);
 
     CM.Context.main.fillText(
         `physics: ${Engine.PhysicsComponent.getCount()}

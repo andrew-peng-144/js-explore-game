@@ -32,8 +32,6 @@ import * as GameState from "./main/gamestate.js";
 import * as HTMLImageSection from "./main/htmlimage-section.js";
 import * as TileMapRenderer from "./main/tilemap-renderer.js";
 
-import * as Counter from "./main/counter.js";
-
 let documentLoaded = false;
 
 let started;
@@ -191,7 +189,6 @@ let ZOOM = Settings.ZOOM;
 
 export {
     start, getFramesElapsed, getFramesSkipped, getNumUpdates, hasStarted,
-    Counter,
 
     Startup,
     State,

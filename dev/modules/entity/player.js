@@ -6,6 +6,8 @@ import * as CanvasManager from "../canvas-manager.js";
 
 import * as EntityState from "./entitystate.js";
 
+import * as Counter from "../misc/counter.js";
+
 // var MovementAnimState = {
 //     curr: 0,
 //     STILL: 0,
@@ -15,7 +17,7 @@ import * as EntityState from "./entitystate.js";
 //     WEST: 4,
 // }
 
-var animCounter = Engine.Counter.create();
+var animCounter = Counter.create();
 var animWalkDelay = 9;
 
 const player_maxSpeed = 1.9869420;
@@ -54,7 +56,7 @@ let init = function (camera, initX = 0, initY = 0) {
     //let player_prev_pos = { x: 0, y: 0 };
     let slideToSetTo = 0;
 
-    let playerAnimCounter = Engine.Counter.create();
+    let playerAnimCounter = Counter.create();
     let pc = Engine.PhysicsComponent.create(eID)
         .setRectangleHitbox(initX, initY, playerHitboxWidth, playerHitboxHeight)
         .setControlFunc(() => {
@@ -75,6 +77,9 @@ let init = function (camera, initX = 0, initY = 0) {
             if (dx === 0 && dy === 0) {
                 //didn't move... keep prev direction but keep it rendering the "idle" state of the anim (2nd slide for player (index 1))
                 rc.setSlide(1);
+                
+                //also reset anim timer when idle so next step will always goto 1 instead of continuing, when spamming 1 direection
+                playerAnimCounter.lap();
                 return;
             }
 
@@ -136,95 +141,6 @@ let init = function (camera, initX = 0, initY = 0) {
 
     }
 
-    // let pc = Engine.Entity.PhysicsComponent.newOptions()
-    //     .addRectHitbox(0, 0, 10, 10, 0, 1)
-    //     .setCollisionDataFunc(function () { return "u hit the player lmfao"; })
-    //     .setControlFunc(playerControl)
-    //     .setOnCollideFunc(function (i, otherData) {
-    //         //console.log("I am player and I bumped into someone's " + i + "th hitbox. Their message is: " + otherData);
-    //     })
-    //     ;
-
-    // entity = Engine.Entity.createEntity(280, 300)
-    //     .withInputComponent(ic)
-    //     .withPhysicsComponent(pc)
-    //     .withRenderComponent(rc)
-    //     ;
-
-
-    // //state stuff, which read/manipulate entity components
-    // let idleState = EntityState.createState()
-    //     .setOnEnter(() => {
-    //         console.log("player is idle!");
-    //         rc.setImageSection(ImageDef.sections().NPC1);
-    //     })
-    //     .setOnExit(() => { console.log("player stopped being idle!"); })
-    //     .setControl(ctrl => {
-    //         ctrl.setDX(0);
-    //         ctrl.setDY(0);
-    //     })
-    // // .setUpdateFunc(() => {
-    // //     //draw idle based on direction..
-
-    // // });
-
-    // let attackingState = EntityState.createState()
-    //     .setOnEnter(() => {
-    //         console.log("player is attacking!");
-    //         rc.setImageSection(ImageDef.sections().FIRE_BLADE)
-    //     })
-    //     .setControl(ctrl => {
-
-    //     });
-
-    // let player_speed = 0;
-    // let player_direction = 0;
-
-    // let movingState = EntityState.createState()
-    //     .setOnEnter(() => {
-
-    //     })
-    //     .setKeyCallback((kd, kj) => {
-    //         //HALLLLLLLLP
-    //         let w = kd.has(KeyCode.W);
-    //         let a = kd.has(KeyCode.A);
-    //         let s = kd.has(KeyCode.S);
-    //         let d = kd.has(KeyCode.D);
-
-    //         player_speed = maxSpeed;
-    //         if (w && a && s && d) { console.log('all'); player_speed = 0; }
-    //         if (w && a) { player_direction = 5 * pi / 4; }
-    //         else if (w && d) { player_direction = 7 * pi / 4; }
-    //         else if (s && a) { player_direction = 3 * pi / 4; }
-    //         else if (s && d) { player_direction = pi / 4; }
-    //         else if (w && s || a && d) { player_speed = 0; }
-    //         else if (w) { player_direction = 3 * pi / 2; }
-    //         else if (a) { player_direction = pi; }
-    //         else if (s) {
-    //             player_direction = pi / 2;
-    //         }
-    //         else if (d) { player_direction = 2 * pi; }
-    //         else { player_speed = 0; } //didnt move
-
-
-    //         //state changes...
-
-
-    //     })
-    //     .setControl(ctrl => {
-    //         ctrl.setDX(player_speed * Math.cos(player_direction));
-    //         ctrl.setDY(player_speed * Math.sin(player_direction));
-    //     })
-
-    // currEntityState = idleState;
-
-    // fsm = EntityState.createMachine()
-    //     .addState(idleState, fsm_idle)
-    //     .addState(attackingState, fsm_attack)
-    //     .addState(movingState, fsm_walk)
-    //     .setState(fsm_idle);
-
-
 }
 
 function playerKeyCallback(kd, kj) {
@@ -253,13 +169,13 @@ function playerKeyCallback(kd, kj) {
 
 
     if (kj.has(KeyCode.E)) {
-        shootBullet();
+        //shootBullet();
     }
 }
 
 function shootBullet() {
     //shoot test
-    let count = Engine.Counter.createAndStart();
+    let count = Counter.createAndStart();
     let bul = Engine.GameEntity.createEntity();
     let pc = Engine.PhysicsComponent.create(bul)
         .setControlFunc(() => {

@@ -6,8 +6,12 @@ var Context = {
     gui, main, bkgd//, propBkgd, entity, propFrgd
 }
 function getWoCtx(canvas) {
-    var ctx = canvas.getContext('2d', { alpha: false });
+    var ctx = canvas.getContext('2d', { alpha: true });
     ctx.imageSmoothingEnabled = false;
+
+    //center canvas horizontally...
+    //canvas.getBoundingClientRect().width;
+    canvas.style.left = "calc(50vw - " + canvas.width + ")";
     return ctx;
 }
 
@@ -28,4 +32,4 @@ Canvas.bkgd.width = MySettings.V_WIDTH;
 Canvas.bkgd.height = MySettings.V_HEIGHT;
 Context.bkgd = getWoCtx(Canvas.bkgd);
 
-export {Canvas, Context};
+export { Canvas, Context };

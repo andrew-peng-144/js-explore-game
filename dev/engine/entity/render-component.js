@@ -496,8 +496,8 @@ var drawAll = function () {
                     camOffsetX = r.camera.getExactX();
                     camOffsetY = r.camera.getExactY();
                 }
-                let destX = Math.round((r.x - camOffsetX) * zoom);
-                let destY = Math.round((r.y - camOffsetY) * zoom);
+                let destX = Math.round((r.x - camOffsetX) * zoom); //could try doing Math.floor on r.x and r.y
+                let destY = Math.round((r.y - camOffsetY) * zoom); //which (maybe) perfectly snaps all entities to the tiles visually
 
                 r.ctx.drawImage(imgSection.image,
                     sx, sy, sw, sh,
