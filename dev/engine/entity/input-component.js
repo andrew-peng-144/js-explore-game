@@ -84,7 +84,7 @@ InputComponent.prototype.setKeyCallback = function (func) {
  * Also the callback has mouse position passed in as 1st, mouse buttons down passed in as 2nd, and mouse buttons just down as 3rd.
  */
 InputComponent.prototype.setMouseCallback = function (canvas, func) {
-    if (canvas.constructor.name !== "HTMLCanvasElement" || typeof func !== "function") {
+    if (canvas.constructor.name !== HTMLCanvasElement.name || typeof func !== "function") {
         throw "rip";
     }
     if (!initializedMouseListener[canvas]) {

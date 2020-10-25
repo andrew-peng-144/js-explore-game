@@ -19,17 +19,46 @@ import * as PhysicsComponent from "./physics-component.js";
 var id_counter = 0; //0 is invalid id
 
 /**
+ * on this frame?
  * @type {Set<Number>}
  */
 let entIDs_to_remove = new Set();
 
+//"GAME DATA" ------------
+//All gameentities have an object as an attribute, representing all of this entity's concrete game data - such as an actor's health value, and any attribute associated to a value.
+//by default, this object is just a blank javascript Object. It can be set using setData or createEntity.
+//This is to easily associate a specific entity with its concrete game data. Useful for collision.
+/*
+"Also note that if you are minifying your code, it's not safe to compare against hard-coded type strings.
+For example instead of checking if obj.constructor.name == "MyType", instead check obj.constructor.name == MyType.name"
+*/
+/**
+ * maps the entity id to a data object. Its default type (its constructor name) is "Object"
+ * @type {Map<number, Object>}
+ */
+var gameDataMap = new Map();
+
 /**
  * Returns a new Unique ID that represents a GameEntity.
  * To add components, use a component's static create() method and pass in this ID.
+ * @param {Object} data the concrete game-data, preferably typed (a constructor name other than "Object") that this entity logically has, e.g. a health value.
+ * Can also be set with GameEntity.setData
  */
-function createEntity() {
+function createEntity(data) {
     let id = ++id_counter;
+    if (typeof data !== "object") {
+        data = {};
+        //console.log("default data for entity #" + id);
+    }
+    gameDataMap.set(id, data);
     return id;
+}
+
+function getData(id) {
+    return gameDataMap.get(id);
+}
+function setData(id, data) {
+    gameDataMap.set(id, data);
 }
 
 /**
@@ -40,6 +69,7 @@ function removeNow(id) {
     PhysicsComponent.remove(id);
     RenderComponent.remove(id);
     Behavior.remove(id);
+    gameDataMap.delete(id);
 }
 
 /**
@@ -51,7 +81,7 @@ function queueRemoval(id) {
 }
 
 /**
- * Immediately removes any marked-gameEntity from the game. Typically, call this after your render()
+ * Immediately removes any marked-gameEntity from the game. Typically, call this after render()
  */
 function clearQueue() {
     entIDs_to_remove.forEach(id => {
@@ -60,6 +90,8 @@ function clearQueue() {
 
     entIDs_to_remove.clear();
 }
+
+
 
 /** Calls updateAll() on these component types in THIS ORDER:
  * input, physics, behavior
@@ -81,5 +113,25 @@ function drawAll() {
     clearQueue();
 }
 
-export { createEntity, removeNow, queueRemoval, clearQueue, updateAll, drawAll }
+/**
+ * debugging function that logs each entity to the console.
+ * Not memory safe. don't spam
+ */
+function logAllEntityData() {
+
+    for (let i = 1; i <= id_counter; i++) {
+        if (gameDataMap.has(i)) {
+            //not deleted
+            let obj = gameDataMap.get(i);
+            let output = "entity #" + i + " (" + obj.constructor.name + ") : {";
+            for (var property in obj) {
+                output += property + ': ' + obj[property] + '; ';
+            }
+            console.log(output + "}");
+        }
+    }
+    //console.log(arr);
+}
+
+export { createEntity, getData, setData, removeNow, queueRemoval, clearQueue, updateAll, drawAll, logAllEntityData }
 //export { newGenericEntity, newActorEntity, GameEntity };

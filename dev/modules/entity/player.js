@@ -1,3 +1,6 @@
+//defines the "Player" type by listing its attributes (private if local here, public if attached to entity data)
+//player is special as there is always only one, so for convenience the "instance" methods are exported instead of the Player type itself.
+
 import * as MyAssetLoader from "../myassetloader.js";
 import * as ImageDef from "../imagedef.js";
 import * as Engine from "../../engine/engine.js";
@@ -17,6 +20,11 @@ import * as Counter from "../misc/counter.js";
 //     WEST: 4,
 // }
 
+function PlayerData() {
+    this.health = 8;
+}
+
+//private (local) vars
 var animCounter = Counter.create();
 var animWalkDelay = 9;
 
@@ -36,12 +44,24 @@ let mainCamera;
 
 let bulletLifetime = 100; //frames
 
+let playermelee_data = {
+
+}
+function PlayerMelee() {
+    this.damage = 0;
+    this.otherattributes = 0;
+}
+
+/**
+ * 
+ */
 let init = function (camera, initX = 0, initY = 0) {
     mainCamera = camera;
 
 
     //setup entity components...
-    eID = Engine.GameEntity.createEntity();
+    debugger;
+    eID = Engine.GameEntity.createEntity(new PlayerData());
     debugger;
     let ic = Engine.InputComponent.create(eID)
         .setKeyCallback(playerKeyCallback)
@@ -65,10 +85,10 @@ let init = function (camera, initX = 0, initY = 0) {
             playerController.dy = player_speed * Math.sin(player_direction);
             return playerController;
         })
-        .setOnCollideFunc((type, data) => {
+        // .setOnCollideFunc((type, data) => {
 
-        })
-        .setCollisionDataFunc(() => { return "u hit the player lmfao"; })
+        // })
+        // .setCollisionDataFunc(() => { return "u hit the player lmfao"; })
         .setPostMoveUpdate((dx, dy) => {
             // if (Engine.getFramesElapsed() % 30 === 0) {
             //     console.log("player dx: " + dx + ", dy: " + dy);
@@ -170,6 +190,10 @@ function playerKeyCallback(kd, kj) {
 
     if (kj.has(KeyCode.E)) {
         //shootBullet();
+
+        //MELEEEEEEEEE!
+        //MAYLAY!!!
+
     }
 }
 
@@ -325,4 +349,4 @@ function setLocation(x, y) {
 //     return entity.getY();
 // }
 
-export { init, getEntityID, setLocation };
+export { init, getEntityID, setLocation, PlayerData };

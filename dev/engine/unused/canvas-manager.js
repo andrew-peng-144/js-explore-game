@@ -1,3 +1,5 @@
+import { Camera2D } from "../main/camera2D.js";
+
 /*
 THIS IS UNNEEDED, WITH THE DECISION TO MAKE THE USER HAVE CONTROL OVER THEIR GAMESTATE IMPLMENETATION.
 
@@ -34,7 +36,7 @@ CanvasSettings.prototype.setZoom = function (zoom) {
  * @param {Camera2D} cam 
  */
 CanvasSettings.prototype.setCamera = function (cam) {
-    if (cam.constructor.name !== "Camera2D") {
+    if (cam.constructor.name !== Camera2D.name) {
         throw "must be Camera2D type (Obviously can be spoofed but just dont pls:) )";
     }
     this.camera = cam;

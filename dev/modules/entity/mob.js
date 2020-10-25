@@ -1,20 +1,27 @@
 //Psycho 100.
 import * as Engine from "../../engine/engine.js";
 import * as ImageDef from "../imagedef.js";
-function Mob(hp) {
-    this.hp = hp;
-    this.entID = Engine.GameEntity.createEntity();
-    let a = Engine.PhysicsComponent.create(this.entID)
-        .setRectangleHitbox(550, 420, 10, 10)
-        .setControlFunc(() => {
-            return { dx: 0.5, dy: 0.4 }
-        });
+function MobData() {
+    this.hp = 5;
+    this.maxhp = 5;
 
-    Engine.RenderComponent.create(this.entID)
+}
+/**
+ * placeholder creation of a mob omegalul.
+ * @param {*} hp
+ * @returns the entity ID.
+ */
+function create(wx = 550, wy = 420, hp) {
+    let mobData = new MobData();
+    mobData.hp = hp;
+    mobData.maxhp = hp;
+
+    let eid = Engine.GameEntity.createEntity(mobData);
+    let a = Engine.PhysicsComponent.create(eid)
+        .setRectangleHitbox(wx, wy, 10, 10);
+
+    Engine.RenderComponent.create(eid)
         .setSection(ImageDef.sections().LINKIN)
         .linkPosToPhysics(a);
 }
-function create(hp) {
-    return new Mob(hp);
-}
-export { create };
+export { create, MobData };

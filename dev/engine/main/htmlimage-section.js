@@ -6,7 +6,7 @@ Must be an HTMLImageElement! The user needs to pass in a reference to the HTML i
 
 
 function ImageSection(image, sx, sy, sw, sh, n) {
-    if (image.constructor.name !== "HTMLImageElement"
+    if (image.constructor.name !== HTMLImageElement.name
         || typeof sx !== "number"
         || typeof sy !== "number"
         || typeof sw !== "number"

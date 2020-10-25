@@ -196,7 +196,7 @@ RenderComponent.prototype.setPosition = function (x, y) {
     return this;
 }
 RenderComponent.prototype.setCamera = function (cam) {
-    if (cam.constructor.name !== "Camera2D") {
+    if (cam.constructor.name !== Camera2D.name) {
         throw "rip";
     }
     if (cam === this.camera) {

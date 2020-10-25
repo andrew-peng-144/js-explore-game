@@ -16,6 +16,7 @@ regions that have physics effects.
 
 //array because easier to iterate thru without duplicate checks when detecting collision, despite array have slower add/remove.
 
+
 /**
  * property is the entity ID, value is the actual PhysicsComponent
  * @type {Object.<number, PhysicsComponent>}
@@ -27,14 +28,187 @@ var physics_comps = {};
  */
 var num_PCs = 0;
 
+
+function PhysicsComponent(id) {
+    if (typeof id !== "number") {
+        throw "YES";
+    }
+    if (physics_comps[id]) {
+        throw id + " already has a physicscomponent.";
+    }
+    this.entityID = id;
+    this._hitbox = null; //Basically pointless without a hitbox.
+    this._control = null; //function setting the velocity of this
+    //this._onCollide = null; //collision handling function for this entity.
+    //this._getCollisionData = null; //function that returns data for collision...
+    this._postMove = null;
+
+    //FOR NOW WE ARE NOT DOING SOLIDITY. BECAUSE TERRAIN IS SOLID. NO ENTITY IS. Any physical interaction with entities will be through "knockback-on-touch" rip
+    //for now I can't think of an instance where making an entity like a solid block that can push other entities analog-ly is a good idea.
+    //this.solid = 0; //solidity priority, 0 means not solid and just an "area" or "sensor", high number is "heavier" than lower number
+
+    //add to physics_comps (map)
+    physics_comps[id] = this;
+    num_PCs++;
+}
+//initializer methods
+PhysicsComponent.prototype.setRectangleHitbox = function (x, y, width, height) {
+    this._hitbox = new AABBHitbox(x, y, width, height);
+    return this;
+}
+//TODO implement these shapes
+PhysicsComponent.prototype.setPolyShapeHitbox = function () {
+    //for setting a hitbox to be multiple shapes.
+    alert("w");
+}
+
+PhysicsComponent.prototype.setCircleShapeHitbox = function () {
+    alert("w.");
+}
+
+
+//Replaced with separate collision handling system
+// /**
+//  * 
+//  * @param {Function} func collision handling function, with other pc's hitbox data passed in as first age
+//  */
+// PhysicsComponent.prototype.setOnCollideFunc = function (func) {
+//     if (typeof func !== "function") {
+//         throw "AAA";
+//     }
+//     this._onCollide = func;
+//     return this;
+// }
+
+//TODO may be better to not have "setControlFunc", and instead just have setters and getters for velocity.
+//This is because the movement patterns should depend on the entity Type, and each entity of a certain type usually
+//should have similar controlling of their velocities.
+//Having each entity have its own control func regardless of type implies that movement and type are uncorrelated which shouldn't be the case.
+/**
+ * @param {Function} func a function that returns, in the format {dx:#, dy:#}, the x vel and y vel of this entity on this frame.
+ * If this function is successfully executed
+ */
+PhysicsComponent.prototype.setControlFunc = function (func) {
+    if (typeof func !== "function") {
+        throw "AAA";
+    }
+    this._control = func;
+    return this;
+}
+
+// /**
+//  * 
+//  * @param {Function} func function that returns some collision data that the other object of a collision should be able to see (not modify)
+//  * Preferably, return a pre-allocated object or number, not a newly-allocated object.
+//  * e.g. get hit by projectile with 5 damage. the 5 needs to be sent to the recipient.
+//  * so pass in "function() {return damage;}" where damage was set to 5 in that context.
+//  * 
+//  */
+// PhysicsComponent.prototype.setCollisionDataFunc = function (func) {
+//     if (typeof func !== "function") {
+//         throw "AAA";
+//     }
+//     this._getCollisionData = func;
+//     return this;
+// }
+
+/**
+ * Sets a function that gets called every update, with the displacement of the entity (including solidity resolution) passed in as the 1st and 2ng arg as dx and dy.
+ */
+PhysicsComponent.prototype.setPostMoveUpdate = function (func) {
+    if (typeof func !== "function") {
+        throw "AAA";
+    }
+    this._postMove = func;
+    return this;
+}
+
+//data retrieval methods
+/**
+ * Get the top left X coordinate of the AABB of this PC (any shape)
+ */
+PhysicsComponent.prototype.getAABBX = function () {
+    if (this._hitbox) {
+        return this._hitbox._xMin;
+    }
+}
+PhysicsComponent.prototype.getAABBY = function () {
+    if (this._hitbox) {
+        return this._hitbox._yMin;
+    }
+}
+PhysicsComponent.prototype.getAABBWidth = function () {
+    if (this._hitbox) {
+        return this._hitbox._width;
+    }
+}
+PhysicsComponent.prototype.getAABBHeight = function () {
+    if (this._hitbox) {
+        return this._hitbox._height;
+    }
+}
+
+function isPhysicsComponent(obj) {
+    return obj instanceof PhysicsComponent;
+}
+
+/**
+ * Rectangular hitbox that is aligned to the x and y axes (not rotated). The most basic and most common. Its AABB is itself.
+ */
+function AABBHitbox(x, y, width, height) {
+    this._xMin = x;
+    this._yMin = y;
+    this._width = width;
+    this._height = height;
+}
+// TODO
+function CircleHitbox(xCenter, yCenter, r) {
+    throw "Ooof";
+    //same fields as aabbhitbox, but instead, refers to the AABB of the CIRCLE
+    //aabb:
+    this._xMin = xCenter - r / 2;
+    this._yMin = yCenter - r / 2;
+    this._width = r * 2;
+    this._height = r * 2;
+
+}
+
+function create(entityID) {
+    return new PhysicsComponent(entityID);
+}
+/**
+ * does nothing if can't find
+ * @param {number} entityID 
+ */
+function remove(entityID) {
+    //physics_comps.delete(entityID);
+    if (physics_comps[entityID]) {
+        delete physics_comps[entityID];
+        num_PCs--;
+    } else {
+        console.log("REMOVE FAILED");
+    }
+}
+
+function get(entityID) {
+    if (physics_comps[entityID] instanceof PhysicsComponent) {
+        return physics_comps[entityID];
+    }
+    throw "That entity doesn't have a physics component, or has been removed.";
+}
+
+
+
+//COLLISION CHECKING -------------------------------------------------------------------------------
+
 /**
  * number of cells the physics grid is horizonally, anything outside of the grid will not be iterated.
  */
-const ENT_GRID_WIDTH_T = 6;
+const ENT_GRID_WIDTH_T = 30;
 /**
  * grid should be small enough for performance and large enough for "idle" entities to be completely offscreen.
  */
-const ENT_GRID_HEIGHT_T = 6;
+const ENT_GRID_HEIGHT_T = 20;
 /**
  * IN PIXELS (not accounting for zoom), this should be equal to tile size on tilemap, and is also the size of each cell on the entity collision grid
  */
@@ -171,161 +345,6 @@ Bucket.prototype.reset = function () {
 }
 
 
-
-function PhysicsComponent(id) {
-    if (typeof id !== "number") {
-        throw "YES";
-    }
-    if (physics_comps[id]) {
-        throw id + " already has a physicscomponent.";
-    }
-    this.entityID = id;
-    this._hitbox = null; //Basically pointless without a hitbox.
-    this._control = null; //function setting the velocity of this
-    this._onCollide = null; //collision handling function for this entity.
-    this._getCollisionData = null; //function that returns data for collision...
-    this._postMove = null;
-
-    //FOR NOW WE ARE NOT DOING SOLIDITY. BECAUSE TERRAIN IS SOLID. NO ENTITY IS. Any physical interaction with entities will be through "knockback-on-touch" rip
-    //for now I can't think of an instance where making an entity like a solid block that can push other entities analog-ly is a good idea.
-    //this.solid = 0; //solidity priority, 0 means not solid and just an "area" or "sensor", high number is "heavier" than lower number
-
-    //add to physics_comps (map)
-    physics_comps[id] = this;
-    num_PCs++;
-}
-//initializer methods
-PhysicsComponent.prototype.setRectangleHitbox = function (x, y, width, height) {
-    this._hitbox = new AABBHitbox(x, y, width, height);
-    return this;
-}
-
-/**
- * 
- * @param {Function} func collision handling function, with other pc's hitbox data passed in as first age
- */
-PhysicsComponent.prototype.setOnCollideFunc = function (func) {
-    if (typeof func !== "function") {
-        throw "AAA";
-    }
-    this._onCollide = func;
-    return this;
-}
-
-/**
- * @param {Function} func a function that returns, in the format {dx:#, dy:#}, the x vel and y vel of this entity on this frame.
- * If this function is successfully executed
- */
-PhysicsComponent.prototype.setControlFunc = function (func) {
-    if (typeof func !== "function") {
-        throw "AAA";
-    }
-    this._control = func;
-    return this;
-}
-
-/**
- * 
- * @param {Function} func function that returns some collision data that the other object of a collision should be able to see (not modify)
- * Preferably, return a pre-allocated object or number, not a newly-allocated object.
- * e.g. get hit by projectile with 5 damage. the 5 needs to be sent to the recipient.
- * so pass in "function() {return damage;}" where damage was set to 5 in that context.
- * 
- */
-PhysicsComponent.prototype.setCollisionDataFunc = function (func) {
-    if (typeof func !== "function") {
-        throw "AAA";
-    }
-    this._getCollisionData = func;
-    return this;
-}
-
-/**
- * Sets a function that gets called every update, with the displacement of the entity (including solidity resolution) passed in as the 1st and 2ng arg as dx and dy.
- */
-PhysicsComponent.prototype.setPostMoveUpdate = function (func) {
-    if (typeof func !== "function") {
-        throw "AAA";
-    }
-    this._postMove = func;
-    return this;
-}
-
-//data retrieval methods
-/**
- * Get the top left X coordinate of the AABB of this PC (any shape)
- */
-PhysicsComponent.prototype.getAABBX = function () {
-    if (this._hitbox) {
-        return this._hitbox._xMin;
-    }
-}
-PhysicsComponent.prototype.getAABBY = function () {
-    if (this._hitbox) {
-        return this._hitbox._yMin;
-    }
-}
-PhysicsComponent.prototype.getAABBWidth = function () {
-    if (this._hitbox) {
-        return this._hitbox._width;
-    }
-}
-PhysicsComponent.prototype.getAABBHeight = function () {
-    if (this._hitbox) {
-        return this._hitbox._height;
-    }
-}
-
-function isPhysicsComponent(obj) {
-    return obj instanceof PhysicsComponent;
-}
-
-/**
- * Rectangular hitbox that is aligned to the x and y axes (not rotated). The most basic and most common. Its AABB is itself.
- */
-function AABBHitbox(x, y, width, height) {
-    this._xMin = x;
-    this._yMin = y;
-    this._width = width;
-    this._height = height;
-}
-// TODO
-function CircleHitbox(xCenter, yCenter, r) {
-    throw "Ooof";
-    //same fields as aabbhitbox, but instead, refers to the AABB of the CIRCLE
-    //aabb:
-    this._xMin = xCenter - r / 2;
-    this._yMin = yCenter - r / 2;
-    this._width = r * 2;
-    this._height = r * 2;
-
-}
-
-function create(entityID) {
-    return new PhysicsComponent(entityID);
-}
-/**
- * does nothing if can't find
- * @param {number} entityID 
- */
-function remove(entityID) {
-    //physics_comps.delete(entityID);
-    if (physics_comps[entityID]) {
-        delete physics_comps[entityID];
-        num_PCs--;
-    } else {
-        console.log("REMOVE FAILED");
-    }
-}
-
-function get(entityID) {
-    if (physics_comps[entityID] instanceof PhysicsComponent) {
-        return physics_comps[entityID];
-    }
-    throw "That entity doesn't have a physics component, or has been removed.";
-}
-
-
 /** Initialize every cell to an array of 0's (default/invalid entity IDs)
  * Total RAM needed for the grid alone is width * height * maxpercell * sizeof_js_number
  * This has to be called exactly once. and the grid should only be modified not re-allocated ever.
@@ -367,6 +386,8 @@ function initEntityGrid() {
 //         }
 //     }
 // }
+
+
 
 /**
  * The only "call-every-frame" function relating to physics components...
@@ -465,8 +486,7 @@ function updateAll() {
                 let tx = 0, ty = 0;
 
                 //check all bounding cells for solid terrain: //(TODO OR STATIC OBJECTS?)
-                //>2 SQUARES on a side means immediately move it & done. (for now -- algorithm can be improved)
-                //>2 squares on any side means move it 
+
                 //debugger;
                 boundingCellLoop:
                 for (tx = pc_x_min_tilemap; tx <= pc_x_max_tilemap; tx++) {
@@ -650,7 +670,7 @@ function updateAll() {
     //for (let i = 0; i < visitedCells.size; i++) {
     //  entBucket = ent_grid[visitedCells.get(i)];
 
-    //FOR EACH CELL! (should have no big memory allocs, and smooth for any reasonable number of ents) (but wastes cpu cycles b/c ALWAYS checks ALL cells (default 2,500)
+    //FOR EACH CELL! (should have no big memory allocs, and smooth for any reasonable number of ents) (but wastes cpu cycles b/c ALWAYS checks ALL cells (ent grid width * height)
     for (let i = 0; i < ENT_GRID_WIDTH_T; i++) {
         //cellCol = ent_grid[i];
         for (let j = 0; j < ENT_GRID_HEIGHT_T; j++) {
@@ -687,16 +707,33 @@ function updateAll() {
                             pcB._hitbox._width, pcB._hitbox._height,
                         )) {
                             //NARROW PHASE PASSED!!!
-                            //debugger;
-                            if (pcA._onCollide) {
-                                pcA._onCollide(pcB._getCollisionData ? pcB._getCollisionData() : null);
+
+                            debugger;
+                            //use new handler -- call the handler function for the two types (both need to have GameData AND a handling function!!!)
+                            let dataA = Engine.GameEntity.getData(pcA.entityID);
+                            let dataB = Engine.GameEntity.getData(pcB.entityID);
+                            if (!dataA || !dataB) {
+                                alert("this aint supposed to happen yo")
+                                continue;
                             }
-                            if (pcB._onCollide) {
-                                pcB._onCollide(pcA._getCollisionData ? pcA._getCollisionData() : null);
+
+                            //The function actually needs to exist (and be a function)
+                            let func = collision_table[dataA.constructor.name + "|" + dataB.constructor.name];
+                            if (typeof func !== "function") {
+                                console.log("couldnt find handler function for " + dataA.constructor.name + " and " + dataB.constructor.name);
+                                continue;
                             }
+                            func(pcA.entityID, pcB.entityID);
+
+                            // if (pcA._onCollide) {
+                            //     pcA._onCollide(pcB._getCollisionData ? pcB._getCollisionData() : null);
+                            // }
+                            // if (pcB._onCollide) {
+                            //     pcB._onCollide(pcA._getCollisionData ? pcA._getCollisionData() : null);
+                            // }
                             //call onCollide for entities in question.
                             //handle everything b/t the two
-                            // TODO on collision "start" and "end" like in box2d...
+
                         }
 
                         //add the pair if it was checked regardless of successful intersect.
@@ -721,6 +758,7 @@ function updateAll() {
 
 
 }
+//END UPDATEALL-------------------------------------------------------------------------------
 
 /**
  * returns UNIQUE int given 2 ints, but order of the 2 ints does NOT matter.
@@ -830,6 +868,34 @@ function setTerrainMap(mapArr, idData, mapWidth, tileSize) {
 function setGridCenterRef(func) {
     ent_grid_getCenter = func;
 }
+
+
+//~~HANDLING OF COLLISIONS (CLEAN)
+/**
+ * assiciates two strings to a function: the key is the two string concatenated.
+ * @type {Object}
+ */
+let collision_table = {};
+/**
+ * Associates two types (Strings given by obj.constructor.name) to a collision handling function whose arguments are the entity IDs of 2 entities whose types are in that order (type1, type2).
+ * 
+ * Note that only one handling function can be associated to a pair of types, so a pair's existing handling function will get overrided by a new handler function.
+ * @param {Function} func the function that manipulates data of the two entities, whose data objects are passed in as the two arguments in following order 
+ * @param {String} type1 The constructor name of the first argument of func
+ * @param {String} type2 second
+ */
+function newCollisionCase(func, type1, type2) {
+    if (typeof type1 !== "string") {
+        type1 = "Object"
+    }
+    if (typeof type2 !== "string") {
+        type2 = "Object"
+    }
+    collision_table[type1+"|"+type2] = func;
+    collision_table[type2+"|"+type1] = function (a, b) { func(b, a); } //ensures the reversed order of indexing still has the handler called in the correct order
+}
+//The function will be called in updateAll (when it finds all collisions and handles each one)
+
 
 
 //debug rendering: drawing hitboxes and terrain
@@ -959,5 +1025,6 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
 export {
     create, remove, get,
     initEntityGrid, updateAll, setTerrainMap, setGridCenterRef, terrain_wall_type, drawDebug, getCount,
-    isPhysicsComponent
+    isPhysicsComponent,
+    newCollisionCase
 };
