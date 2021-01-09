@@ -47,8 +47,11 @@ let bulletLifetime = 100; //frames
 let playermelee_data = {
 
 }
-function PlayerMelee() {
-    this.damage = 0;
+/**used in le query*/
+function PlayerMeleeData() {
+    this.damage = 1;
+    this.reach = 10; //distance from player.
+    this.sweep = 8; //sideways distance. (rectangular)
     this.otherattributes = 0;
 }
 
@@ -349,4 +352,4 @@ function setLocation(x, y) {
 //     return entity.getY();
 // }
 
-export { init, getEntityID, setLocation, PlayerData };
+export { init, getEntityID, setLocation, PlayerData, PlayerMeleeData };

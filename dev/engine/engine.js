@@ -84,25 +84,28 @@ function start2() {
     startLoop();
 }
 
+let public_dt = 0; //just a public view for the dt calculated at the start of each frame() call
 
 function startLoop() {
     //now,
     dt = 0;
     last = timestamp();
-    step = Settings.STEP;
+    step = Settings.STEP; //in units of seconds.
     maxSeconds = 1;
     //var pub = {};
     function frame() {
         //TODO pausing, loop still runs but ignore update and render. For now, this is just "entity pausing" handled by user in their main state. Good for now
         now = timestamp();
 
-        dt = dt + Math.min(maxSeconds, (now - last) / 1000);
+        dt = dt + Math.min(maxSeconds, (now - last) / 1000); //maximum dt is maxSeconds
+        public_dt = dt;
 
         //Update logic.
         GameState.handleStateChange();
         if (GameState.currentStateCatchUpUpdates()) {
             //keep calling update to make up for lag
             let i = -1;
+            // TODO fixed dt sometimes is offset weird, meaning even with perfectly good performance it still only runs at half speed... could be due to some rounding error when checking dt>step..
             while (dt > step) {
                 dt = dt - step;
                 GameState.stepCurrentState();
@@ -118,6 +121,7 @@ function startLoop() {
         else {
             //1-to-1 update and drawing.
             GameState.stepCurrentState();
+            dt = 0;
         }
 
         //Graphics.
@@ -129,6 +133,9 @@ function startLoop() {
         framesElapsed++;
         requestAnimationFrame(frame); //Aims for 60fps.
     }
+    /**
+     * returns # of milliseconds passed
+     */
     function timestamp() {
         return window.performance && window.performance.now ? window.performance.now() : new Date().getTime();
     }
@@ -139,6 +146,12 @@ function startLoop() {
 //     //debugger;
 
 // }
+/**
+ * get time passed on this frame, in seconds
+ */
+function getDeltaTime() {
+    return public_dt
+}
 
 function RENDER() {
     //CanvasManager.clearCanvases(); //user controls when to clear.
@@ -189,6 +202,7 @@ let ZOOM = Settings.ZOOM;
 
 export {
     start, getFramesElapsed, getFramesSkipped, getNumUpdates, hasStarted,
+    getDeltaTime,
 
     Startup,
     State,

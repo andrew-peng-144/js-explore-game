@@ -1,0 +1,96 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Js testing op</title>
+    <meta name="description" content="op af">
+    <meta name="author" content="Wow.">
+
+
+
+</head>
+
+<body>
+    <script type="module" src="./unit-tester.js"></script>
+    <script>
+        
+
+    </script>
+    <!-- <script src='state-machine.js'></script> -->
+    <script>
+
+
+    // function Wow() {
+    //   this.a = "wow";
+    // }
+    // Wow.prototype.ke = function () {
+    //   this.b = "new";
+    // }
+
+    // let a = new Wow();
+    // let b = new Wow();
+    // a.ke();
+    // let c = new Wow();
+
+
+    // //wow.
+    // let set1 = new Set();
+    // set1.add(1234);
+    // set1.add(2345);
+    // set1.add(3456);
+    // set1.forEach(s => {
+    //   set1.delete(2345);
+    //   //set1.clear();
+    //   console.log(s);
+    // })
+
+
+      //TEST:
+      //apply(), bind(), call(), then(),
+
+
+      //do myFunction.call(anObject) to make anObject act as the "this" keyword in the myFunction's body.
+      //can also call() to invoke other constructors
+      //apply is same as call except its 2nd param is array of params rather than varargs
+
+
+      //BINDING: bind() creates a FUNCTION. said function will have the "this" keyword set to the 1st argument of bind().
+      //"The simplest use of bind() is to make a function that, no matter how it is called, is called with a particular "this" value."
+
+      //More efficient array iteration:
+      //"If you know that none of the elements in your array evaluate to false in a boolean context—if your array consists only of DOM nodes, for example—you can use a more efficient idiom:"
+      //let divs = document.getElementsByTagName('div')
+        /*
+           for (let i = 0, div; div = divs[i]; i++) {
+             // Process div in some way
+           }
+      */
+         //OR JUST USE Array.prototype.forEach(): e.g. let colors = ['red', 'green', 'blue']; colors.forEach(color => console.log(color));
+
+         //DONT USE FOR...IN LOOPS.
+
+         //USE join() to print arrays in a list.
+
+    </script>
+
+    <input type="text" id="in">
+    <div id="out"></div>
+
+    <script>
+        let input_el = document.getElementById("in");
+        let out_el = document.getElementById("out");
+
+        input_el.addEventListener("keyup", function (event) {
+            if (event.key === "Enter") {
+                /////////////////////// Test function here //////////////
+                let output = setMessage(input_el.value);
+                out_el.innerHTML = JSON.stringify(output);
+            }
+        });
+    </script>
+</body>
+
+</html>

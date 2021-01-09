@@ -43,6 +43,10 @@ function PhysicsComponent(id) {
     //this._getCollisionData = null; //function that returns data for collision...
     this._postMove = null;
 
+    this._active = true; //whether this will have its collisions checked or not. pc can still move tho.
+    this._freeflow = false; //whether this can just pass thru terrain
+
+    //?? below... we could actually still do it lmao.
     //FOR NOW WE ARE NOT DOING SOLIDITY. BECAUSE TERRAIN IS SOLID. NO ENTITY IS. Any physical interaction with entities will be through "knockback-on-touch" rip
     //for now I can't think of an instance where making an entity like a solid block that can push other entities analog-ly is a good idea.
     //this.solid = 0; //solidity priority, 0 means not solid and just an "area" or "sensor", high number is "heavier" than lower number
@@ -66,20 +70,6 @@ PhysicsComponent.prototype.setCircleShapeHitbox = function () {
     alert("w.");
 }
 
-
-//Replaced with separate collision handling system
-// /**
-//  * 
-//  * @param {Function} func collision handling function, with other pc's hitbox data passed in as first age
-//  */
-// PhysicsComponent.prototype.setOnCollideFunc = function (func) {
-//     if (typeof func !== "function") {
-//         throw "AAA";
-//     }
-//     this._onCollide = func;
-//     return this;
-// }
-
 //TODO may be better to not have "setControlFunc", and instead just have setters and getters for velocity.
 //This is because the movement patterns should depend on the entity Type, and each entity of a certain type usually
 //should have similar controlling of their velocities.
@@ -96,22 +86,6 @@ PhysicsComponent.prototype.setControlFunc = function (func) {
     return this;
 }
 
-// /**
-//  * 
-//  * @param {Function} func function that returns some collision data that the other object of a collision should be able to see (not modify)
-//  * Preferably, return a pre-allocated object or number, not a newly-allocated object.
-//  * e.g. get hit by projectile with 5 damage. the 5 needs to be sent to the recipient.
-//  * so pass in "function() {return damage;}" where damage was set to 5 in that context.
-//  * 
-//  */
-// PhysicsComponent.prototype.setCollisionDataFunc = function (func) {
-//     if (typeof func !== "function") {
-//         throw "AAA";
-//     }
-//     this._getCollisionData = func;
-//     return this;
-// }
-
 /**
  * Sets a function that gets called every update, with the displacement of the entity (including solidity resolution) passed in as the 1st and 2ng arg as dx and dy.
  */
@@ -120,6 +94,16 @@ PhysicsComponent.prototype.setPostMoveUpdate = function (func) {
         throw "AAA";
     }
     this._postMove = func;
+    return this;
+}
+
+/** sets whether this physics component will be checked for collision with other pc's. default is true. */
+PhysicsComponent.prototype.setActive = function (bool) {
+    this._active = bool;
+    return this;
+}
+PhysicsComponent.prototype.setFreeflow = function (bool) {
+    this._freeflow = bool;
     return this;
 }
 
@@ -204,15 +188,21 @@ function get(entityID) {
 /**
  * number of cells the physics grid is horizonally, anything outside of the grid will not be iterated.
  */
-const ENT_GRID_WIDTH_T = 30;
+const ENT_GRID_WIDTH_T = 10;
 /**
  * grid should be small enough for performance and large enough for "idle" entities to be completely offscreen.
  */
-const ENT_GRID_HEIGHT_T = 20;
+const ENT_GRID_HEIGHT_T = 5;
 /**
- * IN PIXELS (not accounting for zoom), this should be equal to tile size on tilemap, and is also the size of each cell on the entity collision grid
+ * IN PIXELS (not accounting for zoom), this is the size of each cell on the entity collision grid. This may be equal to the tile size. Or a integer multiple of it.
  */
-var CELLSIZE = 16;
+var ENT_CELLSIZE = 32;
+
+/**
+ * IN PIXELS (not accounting for zoon), the size of a tile on the terrain
+ */
+var TERRAIN_TILESIZE = 16;
+
 /**
  * if a cell has this many entities, more cannot be added to this cell, for performance reasons.
  * so may lead to weird behavior if too many in one cell.
@@ -237,10 +227,35 @@ var ent_grid = null;
 // let visitedCells = null;
 
 /**
- * for handling collisions, use this to check if a collision pair (two hashed entity IDs) is already handled
+ * for handling collisions, use this to check if a collision pair (two hashed entity IDs) is already handled in this frame.
  * @type {Set.<number>}
  */
 var checked_pairs = new Set();
+
+/**
+ * for tracking whether a collision just happened between two specific entities, and when they stopped colliding.
+ * 
+ * number is the hash
+ * 
+ * boolean is "mark": when a pair is found for the first time, it gets added to this, then marked true.
+ * Then remove all pairs already in the list (from the prev frame) that are still false.
+ * Then set all pairs to false.
+ * if the pair is found on the next frame, it will get marked back to true.
+ * but if the pair is not found (it didn't get marked true), then it's false, so then remove from this, and call the onexit method
+ * @type {Map.<number,boolean>}
+ */
+var collided_pairs = new Map();
+
+// /**
+//  * holds the pairs that collided on this frame. This along with prev_c_p is used in order to know when two objects collided the first time, middle, or exited.
+//  * @type {Set.<number>}
+//  */
+// var curr_collided_pairs = new Set();
+// /**
+//  * holds the pairs that collided on the previous frame
+//  * @type {Set.<number>}
+//  */
+// var prev_collided_pairs = new Set();
 
 /**
  * an integer in cell coordinates, aka world coordinates divided by CELLSIZE, representing top left corner of the Entity grid
@@ -443,10 +458,10 @@ function updateAll() {
         //debugger;
         let pcOldX = hitbox._xMin;
         let pcOldY = hitbox._yMin;
-        if (hitbox._xMin >= ent_grid_xMin_t * CELLSIZE
-            && hitbox._yMin >= ent_grid_yMin_t * CELLSIZE
-            && hitbox._xMin + hitbox._width < (ent_grid_xMin_t + ENT_GRID_WIDTH_T) * CELLSIZE
-            && hitbox._yMin + hitbox._height < (ent_grid_yMin_t + ENT_GRID_HEIGHT_T) * CELLSIZE) {
+        if (hitbox._xMin >= ent_grid_xMin_t * ENT_CELLSIZE
+            && hitbox._yMin >= ent_grid_yMin_t * ENT_CELLSIZE
+            && hitbox._xMin + hitbox._width < (ent_grid_xMin_t + ENT_GRID_WIDTH_T) * ENT_CELLSIZE
+            && hitbox._yMin + hitbox._height < (ent_grid_yMin_t + ENT_GRID_HEIGHT_T) * ENT_CELLSIZE) {
 
 
             //move it (if control is defined)
@@ -457,7 +472,7 @@ function updateAll() {
                 hitbox._yMin += ctr.dy || 0;
             }
             /**
-             * x coord of the MOVED pc in tilemap cell coords
+             * x coord of the ALREADY-MOVED pc in tilemap cell coords
              */
             let pc_x_min_tilemap = _worldToTilemapCoord(hitbox._xMin);
             let pc_y_min_tilemap = _worldToTilemapCoord(hitbox._yMin);
@@ -467,6 +482,13 @@ function updateAll() {
             //SOLID TERRAIN RESOLUTION - before even adding it to entity grid, first ensure no (rectangular) entity goes past a wall!
             //by checking the bounding cells it's in.
 
+            //freeflow dont solidly handle with terrain.
+            if (pc._freeflow) {
+                if (typeof pc._postMove === "function") {
+                    pc._postMove(hitbox._xMin - pcOldX, hitbox._yMin - pcOldY);
+                }//sigh. just copy pasted thjis from the end...
+                continue;
+            }
             //only handling rectangular hitboxes for now.
             if (!(hitbox instanceof AABBHitbox)) {
                 continue;
@@ -479,11 +501,13 @@ function updateAll() {
 
                 let tileID;
                 let idData = 0;
-                let numWallsTop = 0;
+                let numWallsTop = 0; //lulw i tried. lets be honest. RIP!
                 let numWallsRight = 0;
                 let numWallsBot = 0;
                 let numWallsLeft = 0;
                 let tx = 0, ty = 0;
+
+
 
                 //check all bounding cells for solid terrain: //(TODO OR STATIC OBJECTS?)
 
@@ -504,32 +528,34 @@ function updateAll() {
                             continue;
                         }
                         //debugger;
-
+                        break; //////////////////////////////////ALERT terrain collision off
+                        //will do better system anyway.
+                        ////////////////////////////////
                         switch (idData) {
 
                             //line cases: resolve NOW in respective direction, while checking it is actually inthat direction
                             case terrain_wall_type.DOWN:
                                 if (ty === pc_y_min_tilemap) {
                                     //push down
-                                    hitbox._yMin = (pc_y_min_tilemap + 1) * CELLSIZE;
+                                    hitbox._yMin = (pc_y_min_tilemap + 1) * TERRAIN_TILESIZE;
                                 }
                                 break;
                             case terrain_wall_type.RIGHT:
                                 if (tx === pc_x_min_tilemap) {
                                     //push right
-                                    hitbox._xMin = (pc_x_min_tilemap + 1) * CELLSIZE;
+                                    hitbox._xMin = (pc_x_min_tilemap + 1) * TERRAIN_TILESIZE;
                                 }
                                 break;
                             case terrain_wall_type.LEFT:
                                 if (tx === pc_x_max_tilemap) {
                                     //push left
-                                    hitbox._xMin = pc_x_max_tilemap * CELLSIZE - hitbox._width - 0.01; //tiny amount to avoid persistent collision
+                                    hitbox._xMin = pc_x_max_tilemap * TERRAIN_TILESIZE - hitbox._width - 0.01; //tiny amount to avoid persistent collision
                                 }
                                 break;
                             case terrain_wall_type.UP:
                                 if (ty === pc_y_max_tilemap) {
                                     //push up
-                                    hitbox._yMin = pc_y_max_tilemap * CELLSIZE - hitbox._height - 0.01;
+                                    hitbox._yMin = pc_y_max_tilemap * TERRAIN_TILESIZE - hitbox._height - 0.01;
                                 }
                                 break;
                             case terrain_wall_type.DOWN | terrain_wall_type.LEFT:
@@ -540,12 +566,12 @@ function updateAll() {
 
                                     //check whether intersecting the topwall or the rightwall is greater disp. (make sure both are positive numbers)
 
-                                    if ((ty + 1) * CELLSIZE - hitbox._yMin < hitbox._xMin + hitbox._width - (tx) * CELLSIZE) {
+                                    if ((ty + 1) * TERRAIN_TILESIZE - hitbox._yMin < hitbox._xMin + hitbox._width - (tx) * TERRAIN_TILESIZE) {
                                         //top won (is smaller) (Default) so push down
-                                        hitbox._yMin = (pc_y_min_tilemap + 1) * CELLSIZE;
+                                        hitbox._yMin = (pc_y_min_tilemap + 1) * TERRAIN_TILESIZE;
                                     } else {
                                         //right won so push left
-                                        hitbox._xMin = pc_x_max_tilemap * CELLSIZE - hitbox._width - 0.01;
+                                        hitbox._xMin = pc_x_max_tilemap * TERRAIN_TILESIZE - hitbox._width - 0.01;
                                     }
 
 
@@ -555,12 +581,12 @@ function updateAll() {
                                 //  __|
 
                                 if (ty === pc_y_min_tilemap || tx === pc_x_min_tilemap) {
-                                    if ((ty + 1) * CELLSIZE - hitbox._yMin < (tx + 1) * CELLSIZE - hitbox._xMin) {
+                                    if ((ty + 1) * TERRAIN_TILESIZE - hitbox._yMin < (tx + 1) * TERRAIN_TILESIZE - hitbox._xMin) {
                                         //top won (is smaller) so push down
-                                        hitbox._yMin = (pc_y_min_tilemap + 1) * CELLSIZE;
+                                        hitbox._yMin = (pc_y_min_tilemap + 1) * TERRAIN_TILESIZE;
                                     } else {
                                         //left won, so push right
-                                        hitbox._xMin = (pc_x_min_tilemap + 1) * CELLSIZE;
+                                        hitbox._xMin = (pc_x_min_tilemap + 1) * TERRAIN_TILESIZE;
                                     }
                                 }
                                 break;
@@ -568,12 +594,12 @@ function updateAll() {
                                 //  __
                                 // |
                                 if (ty === pc_y_max_tilemap || tx === pc_x_max_tilemap) {
-                                    if (hitbox._yMin + hitbox._height - (ty) * CELLSIZE < hitbox._xMin + hitbox._width - (tx) * CELLSIZE) {
+                                    if (hitbox._yMin + hitbox._height - (ty) * TERRAIN_TILESIZE < hitbox._xMin + hitbox._width - (tx) * TERRAIN_TILESIZE) {
                                         //bottom won (is smaller) so push up
-                                        hitbox._yMin = pc_y_max_tilemap * CELLSIZE - hitbox._height - 0.01;
+                                        hitbox._yMin = pc_y_max_tilemap * TERRAIN_TILESIZE - hitbox._height - 0.01;
                                     } else {
                                         //right won so push left
-                                        hitbox._xMin = pc_x_max_tilemap * CELLSIZE - hitbox._width - 0.01;
+                                        hitbox._xMin = pc_x_max_tilemap * TERRAIN_TILESIZE - hitbox._width - 0.01;
                                     }
                                 }
                                 break;
@@ -581,12 +607,12 @@ function updateAll() {
                                 // __
                                 //   |
                                 if (ty === pc_y_max_tilemap || tx === pc_x_min_tilemap) {
-                                    if (hitbox._yMin + hitbox._height - (ty) * CELLSIZE < (tx + 1) * CELLSIZE - hitbox._xMin) {
+                                    if (hitbox._yMin + hitbox._height - (ty) * TERRAIN_TILESIZE < (tx + 1) * TERRAIN_TILESIZE - hitbox._xMin) {
                                         //bottom won (is smaller) so push up
-                                        hitbox._yMin = pc_y_max_tilemap * CELLSIZE - hitbox._height - 0.01;
+                                        hitbox._yMin = pc_y_max_tilemap * TERRAIN_TILESIZE - hitbox._height - 0.01;
                                     } else {
                                         //left won so push right
-                                        hitbox._xMin = (pc_x_min_tilemap + 1) * CELLSIZE;
+                                        hitbox._xMin = (pc_x_min_tilemap + 1) * TERRAIN_TILESIZE;
                                     }
                                 }
                                 break;
@@ -656,9 +682,13 @@ function updateAll() {
         }
         //end iterating physicsComps
     }
+
+
+
     //solidity resolution done, & all entities in update area added to grid
     //Entities will STAY PUT for the rest of the step from here on.
 
+    //~~~~~~~~~~~~~~NARROW PHASE COLLISION
     //For each visited cell, only if theres >=2 ents in them, brute force check them then narrow phase collision 
     //for the cell after everything inside it is handled, CLEAR the bucket
 
@@ -717,13 +747,16 @@ function updateAll() {
                                 continue;
                             }
 
-                            //The function actually needs to exist (and be a function)
+                            //The handler function actually needs to exist (and be a function)
                             let func = collision_table[dataA.constructor.name + "|" + dataB.constructor.name];
                             if (typeof func !== "function") {
                                 console.log("couldnt find handler function for " + dataA.constructor.name + " and " + dataB.constructor.name);
                                 continue;
                             }
-                            func(pcA.entityID, pcB.entityID);
+
+                            func(pcA.entityID, pcB.entityID, !collided_pairs.has(hash)); //3rd arg: true if just collided, false otherwise
+                            collided_pairs.set(hash, true); //adds if first, sets if already exists.
+                            //curr_collided_pairs.add(hash);
 
                             // if (pcA._onCollide) {
                             //     pcA._onCollide(pcB._getCollisionData ? pcB._getCollisionData() : null);
@@ -753,8 +786,83 @@ function updateAll() {
     //clear the list of visited cells so next frame can re-write these cleanly
     //visitedCells.reset();
 
-    //clear this too since pairs that collided have no (little) relation between frames
+    //clear checked_pairs since pairs that collided have no (little) relation between frames
     checked_pairs.clear();
+
+    //cleanup the collided pairs: remove the falsy ones, then reset for the cleanup on next frame
+    for (let k of collided_pairs.keys()) {
+        if (collided_pairs.get(k) === false) {
+            collided_pairs.delete(k);
+            console.log("removed "+k+"(hash) from collided pairs");
+            //Note: this is filtering within the iterating function, works in js but may not in other languages
+        }
+    }
+    for (let k of collided_pairs.keys()) {
+        collided_pairs.set(k, false);
+    }
+    //old way below didnt work
+    // //call onexit for the pairs (hashed num) in prev but not in curr. (set difference) // TODO
+    // prev_collided_pairs.forEach(pair => {
+    //     if (!curr_collided_pairs.has(pair)) {
+    //         //inefficient doing has() in for each?
+    //         let inv = _inverse_cantor(pair);
+    //         console.log(inv.x + " STOPPED COLLIDING WITH " + inv.y);
+    //         // TODO call onexit
+    //     }
+    // });
+    // //then advance the two collided_pairs sets, doing prev=curr and clearing curr (clearing for next frame to fill.)
+    // prev_collided_pairs = curr_collided_pairs.;
+    // curr_collided_pairs.clear();
+
+    //~~~~~~~~~~~~~HANDLING QUERIES
+    // queries.forEach(query => {
+    //     let hitbox = query.hitbox;
+    //         ///////////////////////////  HELP - PROBABLY NOT DOING QUERYING. IT ADDS MORE OVERHEAD BUT JUST REPEATS CODE. ALSO WHAT IS THE ENTITY ID OF THE QUERY???
+    //         ////////////////////////////  ALSO IT'S WEIRD TO USE IT IN THE HANDLERDEF AS WELL AS THE NATURE OF A QUERY IS DIFFERENT FROM A HITBOX,
+    //         ///////////////////////////            YET THE HANDLER CODE IS IN THE SAME FILE.
+    //         //////////// so will probably have hitbox active / inactive instead...
+    //     let q_x_min_ent_grid = _worldToEntGridX(hitbox._xMin);
+    //     let q_y_min_ent_grid = _worldToEntGridY(hitbox._yMin);
+    //     let q_x_max_ent_grid = _worldToEntGridX(hitbox._width + hitbox._xMin);
+    //     let q_y_max_ent_grid = _worldToEntGridY(hitbox._height + hitbox._yMin);
+
+    //     //need to check the cells that the hitbox's aabb overlaps, for any other entities
+    //     //then resolve with each overlapping entity. using the collision handler method.
+    //     let tx, ty;
+    //     for (tx = q_x_min_ent_grid; tx <= q_x_max_ent_grid; tx++) {
+    //         for (ty = q_y_min_ent_grid; ty <= q_y_max_ent_grid; ty++) {
+    //             //do not add negative coords???
+    //             //not sure what to do with negative coords...
+    //             if (tx < 0 || ty < 0) {
+    //                 console.log("NEGATIVE COORDS2");
+    //                 continue;
+    //             }
+
+    //             let entBucket = ent_grid[tx + ty * ENT_GRID_WIDTH_T];
+    //             console.log(entBucket);
+    //             for (let i = 0; i < entBucket.size; i++) {
+    //                 let entID = entBucket.get(i);
+    //                 //use new handler
+    //                 let data = Engine.GameEntity.getData(entID);
+    //                 if (!data) {
+    //                     console.log("RIP");
+    //                     continue;
+    //                 }
+
+    //                 //The function actually needs to exist (and be a function)
+    //                 let func = collision_table[data.constructor.name + "|" + query.type.constructor.name];
+    //                 if (typeof func !== "function") {
+    //                     console.log("couldnt find handler function for " + data.constructor.name + " and " + query.type.constructor.name);
+    //                     continue;
+    //                 }
+    //                 func(pcA.entityID, pcB.entityID);
+
+    //             }
+
+    //         }
+    //     }
+    // });
+    // queries.clear();
 
 
 }
@@ -768,6 +876,18 @@ function _cantorHash_unordered(numA, numB) {
         return (numA + numB) * (numA + numB + 1) / 2 + numB;
     } else {
         return (numA + numB) * (numA + numB + 1) / 2 + numA;
+    }
+}
+
+/**
+ * given the hashed pair, this returns the two numbers, smaller one is x larger is y.
+ */
+function _inverse_cantor(z) {
+    let w = Math.floor((Math.sqrt(8 * z + 1) - 1) / 2);
+    let t = (w * w + w) / 2;
+    return {
+        y: z - t,
+        x: w - y
     }
 }
 
@@ -820,22 +940,22 @@ function _midpoint(x1, y1, x2, y2) {
  * Assume the entity grid has its top-left at e_g_x_t and e_g_y_t, is "snapped" to the tilesize of the tilemap
  */
 function _worldToEntGridX(x) {
-    return Math.floor((x - ent_grid_xMin_t * CELLSIZE) / CELLSIZE);
+    return Math.floor((x - ent_grid_xMin_t * ENT_CELLSIZE) / ENT_CELLSIZE);
     //return Math.floor(x / CELLSIZE) + ent_grid_xMin_t;
 }
 function _worldToEntGridY(y) {
-    return Math.floor((y - ent_grid_yMin_t * CELLSIZE) / CELLSIZE);
+    return Math.floor((y - ent_grid_yMin_t * ENT_CELLSIZE) / ENT_CELLSIZE);
     //return Math.floor(y / CELLSIZE) + ent_grid_yMin_t;
 }
 
 /**
- * converts a world coord to WORLD CELL coordinates of the TERRAIN (tilemap)
- * because the tilemap starts at ZERO world coords
+ * scales a world coordinate to a coordinate scaled to the entity grid.
+ * But note that the returned value may not actually be on the grid, its just on the same scale
  * 
- * ex is size=16, then like 31.9999 will be 1, 16.000 will be 1
+ * ex if size=16, then like 31.9999 will be 1, 16.000 will be 1
  */
 function _worldToTilemapCoord(num) {
-    return Math.floor(num / CELLSIZE);
+    return Math.floor(num / ENT_CELLSIZE);
 }
 
 /**
@@ -851,13 +971,13 @@ function getCount() {
  * @param mapArr an array of TILE ID's
  * @param {Object.<number, number>} idData an object where: properties are the tile ID's, and the value is a Terrain Wall Type (number)
  * @param mapWidth width of the mapArr in TILES
- * @param tileSize usually 16. if not, the physics will also align with the given tilesize
+ * @param tileSize usually 16
  */
-function setTerrainMap(mapArr, idData, mapWidth, tileSize) {
+function setTerrainMap(mapArr, idData, mapWidth, tileSize = 16) {
     terrain_mapArr = mapArr;
     terrain_idData = idData;
     terrain_mapWidth = mapWidth;
-    CELLSIZE = tileSize || CELLSIZE;
+    TERRAIN_TILESIZE = tileSize;
 }
 
 /**
@@ -870,9 +990,10 @@ function setGridCenterRef(func) {
 }
 
 
-//~~HANDLING OF COLLISIONS (CLEAN)
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~HANDLING OF COLLISIONS (CLEAN)
 /**
  * assiciates two strings to a function: the key is the two string concatenated.
+ * each function will be called in updateAll (when it finds all collisions and handles each one)
  * @type {Object}
  */
 let collision_table = {};
@@ -886,17 +1007,30 @@ let collision_table = {};
  */
 function newCollisionCase(func, type1, type2) {
     if (typeof type1 !== "string") {
-        type1 = "Object"
+        type1 = "Object";
     }
     if (typeof type2 !== "string") {
-        type2 = "Object"
+        type2 = "Object";
     }
-    collision_table[type1+"|"+type2] = func;
-    collision_table[type2+"|"+type1] = function (a, b) { func(b, a); } //ensures the reversed order of indexing still has the handler called in the correct order
+    collision_table[type1 + "|" + type2] = func;
+    collision_table[type2 + "|" + type1] = function (a, b) { func(b, a); } //ensures the reversed order of indexing still has the handler called in the correct order
 }
-//The function will be called in updateAll (when it finds all collisions and handles each one)
 
 
+// //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~QUERYING
+//not doing it F.
+
+// /**list of queries, to be performed in the next updateAll then cleared
+//  * @type {Set.<Object.{Hitbox, Type}>}
+// */
+// let queries = new Set();
+// /**
+//  * Queue a query to be performed when the next time updateAll is called.
+//  * @param {*} type the data used in collision
+//  */
+// function queryRect(x, y, w, h, type) {
+//     queries.add({ hitbox: new AABBHitbox(x, y, w, h), type: type })
+// }
 
 //debug rendering: drawing hitboxes and terrain
 /**
@@ -913,7 +1047,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
 
     //draw entities' AABBs on screen (only checking the top left corner lol)
     //and also the cells that the AABBs touch (TODO?)
-    let scx = 0, scy = 0, scw = 0, sch = 0;
+    let scx = 0, scy = 0, scw = 0, sch = 0; //These are variables that hold a value for rectangle. The same variables are used to hold data for other rectangles later in the code.
     let pc;
     for (const idStr in physics_comps) {
         pc = physics_comps[idStr];
@@ -940,10 +1074,10 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
     let tileID = 0;
     let data = 0;
 
-    let xi = Math.floor(camera.getExactX() / CELLSIZE), //these 4 are in units of tiles.
-        xf = Math.ceil((camera.getExactX() + screenWidth / zoom) / CELLSIZE), //need to divide canvas width by ZOOM.
-        yi = Math.floor(camera.getExactY() / CELLSIZE),
-        yf = Math.ceil((camera.getExactY() + screenHeight / zoom) / CELLSIZE);
+    let xi = Math.floor(camera.getExactX() / TERRAIN_TILESIZE), //these 4 are in units of tiles.
+        xf = Math.ceil((camera.getExactX() + screenWidth / zoom) / TERRAIN_TILESIZE), //need to divide canvas width by ZOOM.
+        yi = Math.floor(camera.getExactY() / TERRAIN_TILESIZE),
+        yf = Math.ceil((camera.getExactY() + screenHeight / zoom) / TERRAIN_TILESIZE);
     for (tx = xi; tx < xf; tx++) {
         if (tx < 0) {
             continue;
@@ -953,8 +1087,8 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
                 continue;
             }
             tileID = terrain_mapArr[tx + ty * terrain_mapWidth];
-            scx = (tx * CELLSIZE - camera.getExactX()) * zoom;
-            scy = (ty * CELLSIZE - camera.getExactY()) * zoom;
+            scx = (tx * TERRAIN_TILESIZE - camera.getExactX()) * zoom;
+            scy = (ty * TERRAIN_TILESIZE - camera.getExactY()) * zoom;
             data = terrain_idData[tileID];
             //switch () {
             // case terrain_wall_type.SQUARE:
@@ -967,8 +1101,8 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             if (data & terrain_wall_type.DOWN) {
                 //may be inefficient as it draws lines individually but some may not be connected so...
                 ctx.beginPath();
-                ctx.moveTo(scx, scy + CELLSIZE * zoom);
-                ctx.lineTo(scx + CELLSIZE * zoom, scy + CELLSIZE * zoom); //draw line 1 cellsize long
+                ctx.moveTo(scx, scy + TERRAIN_TILESIZE * zoom);
+                ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy + TERRAIN_TILESIZE * zoom); //draw line 1 tilesize long
                 ctx.stroke();
             }
             //break;
@@ -976,7 +1110,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             if (data & terrain_wall_type.LEFT) {
                 ctx.beginPath();
                 ctx.moveTo(scx, scy);
-                ctx.lineTo(scx, scy + CELLSIZE * zoom);
+                ctx.lineTo(scx, scy + TERRAIN_TILESIZE * zoom);
                 ctx.stroke();
             }
             // break;
@@ -984,15 +1118,15 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             if (data & terrain_wall_type.UP) {
                 ctx.beginPath();
                 ctx.moveTo(scx, scy);
-                ctx.lineTo(scx + CELLSIZE * zoom, scy);
+                ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy);
                 ctx.stroke();
             }
             //break;
             //case terrain_wall_type.LEFT:
             if (data & terrain_wall_type.RIGHT) {
                 ctx.beginPath();
-                ctx.moveTo(scx + CELLSIZE * zoom, scy);
-                ctx.lineTo(scx + CELLSIZE * zoom, scy + CELLSIZE * zoom);
+                ctx.moveTo(scx + TERRAIN_TILESIZE * zoom, scy);
+                ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy + TERRAIN_TILESIZE * zoom);
                 ctx.stroke();
             }
             //break;
@@ -1009,11 +1143,11 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
 
     ctx.strokeStyle = "black";
 
-    scx = (ent_grid_xMin_t * CELLSIZE - camera.getExactX()) * zoom;
-    scy = (ent_grid_yMin_t * CELLSIZE - camera.getExactY()) * zoom;
+    scx = (ent_grid_xMin_t * ENT_CELLSIZE - camera.getExactX()) * zoom;
+    scy = (ent_grid_yMin_t * ENT_CELLSIZE - camera.getExactY()) * zoom;
     //draw outline of grid...
     ctx.beginPath();
-    ctx.rect(scx, scy, ENT_GRID_WIDTH_T * CELLSIZE * zoom, ENT_GRID_HEIGHT_T * CELLSIZE * zoom);
+    ctx.rect(scx, scy, ENT_GRID_WIDTH_T * ENT_CELLSIZE * zoom, ENT_GRID_HEIGHT_T * ENT_CELLSIZE * zoom);
     ctx.stroke();
 
 

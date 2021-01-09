@@ -24,11 +24,13 @@ import * as TiledObject from "../entity/TiledObject.js";
 
 import * as HandlerDef from "../entity/handlerdef.js";
 
+import * as UI from "../gui/ui-main.js";
+
 //"implments" state "interface"
 
 //lul
 let i_for_counter = 0;
-let ticksPassed = 0;
+let framesPassed = 0;
 let myCameraFixture;
 let cam;
 
@@ -195,7 +197,9 @@ function onEnter(from, data) {
     //sigh make above clearner later?
 
     //create gui shit
-    gui_bot_text = Element.createElement(MySettings.V_WIDTH / 2, 500, 500, 100);
+    //gui_bot_text = Element.createElement(MySettings.V_WIDTH / 2, 500, 500, 100);
+    //gui_bot_text = Element.DialogueBox.createDialogueBox(MySettings.V_WIDTH / 2, 500, 500, 100);
+    UI.init();
 
     //mob test
     //Mob.create(3);
@@ -256,26 +260,42 @@ function firstenter(data) {
 
         //LULW guess this can be used for other debug stuff?
         else if (ev.keyCode === KeyCode.F) {
-            //test gui toggle
-            gui_bot_text.display();
+            //test gui 
+            // gui_bot_text.show();
+            // gui_bot_text.start();
+            UI.mainDialogueBox.setMessage("You see those warriors from Hammerfell? @a They’ve got curved swords. Curved. Swords. @a My cousins out fighting dragons, and what do I get? Guard duty. @a I got to thinking… maybe i’m the Dragonborn and I just don’t know it yet!");
+            UI.mainDialogueBox.show();
+            UI.mainDialogueBox.start();
+            
         }
         else if (ev.keyCode === KeyCode.G) {
-            //test gui toggle
-            gui_bot_text.hide();
+            //test gui 
+            // gui_bot_text.hide();
+            UI.mainDialogueBox.hide();
         }
         else if (ev.keyCode === KeyCode.H) {
-            //test gui toggle
+            //test gui 
             //gui_bot_text.counter.start();
-            gui_bot_text.setMessage("LULWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW");
+            // gui_bot_text.setMessage("LULWWWWWW WWWWWWWWWWWWWWWW WWWWWWWWW WWWWWWWW WWWWWWWWW");
+            UI.mainDialogueBox.setMessage("sadfasd jfsad fsad fsd fsd fas sd ");
+        }
+        else if (ev.keyCode === KeyCode.J) {
+            //test gui 
+            //gui_bot_text.counter.start();
+            // gui_bot_text.advance();
+            UI.mainDialogueBox.advance();
         }
         else if (ev.ctrlKey && ev.keyCode === KeyCode.E) {
             //ctrl-e print detailed list of all entities
             Engine.GameEntity.logAllEntityData();
         }
+        else if (ev.keyCode === KeyCode.I) {
+            Engine.PhysicsComponent.queryRect(560,300,30,30);
+        }
 
     });
 
-    Counter.setTimeFunction(() => ticksPassed);
+    Counter.setTimeFunction(() => framesPassed);
 
     //track mouse position by creating an entity that updates it
     let idkID = Engine.GameEntity.createEntity();
@@ -370,9 +390,11 @@ function update() {
         SIG_DEF[sig.code](sig.data);
     }
 
-    ticksPassed++;
 
 }
+
+let fps_test = 60;
+let fps_smooth_factor = 0.95; //closer to 1 means current displayed fps depends more on its previous val
 function render() {
     if (myPaused) {
 
@@ -387,11 +409,19 @@ function render() {
     Engine.GameEntity.drawAll();
 
     //GUIIIIIIII
-    Element.drawAll(CM.Context.main);
+    //Element.drawAll(CM.Context.main);
+    UI.draw(CM.Context.main);
 
     //CM.Context.main.fillText('MAIN STATE', 10, 50);
     //DrawHitbox.drawHitboxes(CM.Context.main, cam);
     Engine.PhysicsComponent.drawDebug(CM.Context.main, cam, MySettings.V_WIDTH, MySettings.V_HEIGHT);
+
+    if (Engine.getFramesElapsed() % 4 == 0) {
+        //update the fps value.
+        //interpolate it with the previous value for smoothing
+
+        fps_test = fps_test * fps_smooth_factor + (1 / Engine.getDeltaTime()) * (1-fps_smooth_factor);
+    }
 
     CM.Context.main.fillText(
         `physics: ${Engine.PhysicsComponent.getCount()}
@@ -400,12 +430,16 @@ function render() {
         behaviors: ${Engine.Behavior.getCount()}
         
         MOUSE: canvas ${JSON.stringify(mousePos)} world ${mousePos.x / Engine.ZOOM + cam.getRoundedX()},${mousePos.y / Engine.ZOOM + cam.getRoundedY()}
+
+        FPS: ${fps_test.toFixed(2)}
         
         `, 10, 70);
 
     CM.Context.main.fillText(`
         Frames skipped: ${Engine.getFramesSkipped()}
     `, 10, 50)
+
+    framesPassed++; //moved to here so counter wiwll be consistent throughout both update and render.
 }
 
 
