@@ -43,8 +43,9 @@ function ajaxJSON(urlToJSON, callback) {
     xhttp.open("GET", urlToJSON, true); //async
     xhttp.send();
 }
-var levelDataArray;
+var levelDataArray; //from tiled. 1d array of ints rep the world
 var mapTWidth;
+var mapTHeight;
 
 function onEnter(from, data) {
     console.log("Entered loadworldstate: " + Date.now());
@@ -79,17 +80,18 @@ function onEnter(from, data) {
 
     ajaxJSON("./assets/leveldata/" + map,
         xhttp => {
-            //debugger;
+
             console.log("done reading level at: " + Date.now());
             let map_data = JSON.parse(xhttp.response);
             console.log("done parsing level at: " + Date.now());
 
             mapTWidth = map_data.width;
+            mapTHeight = map_data.height;
             //check layers.
 
             let initPlayerX = 0;
             let initPlayerY = 0;
-            debugger;
+
             map_data.layers.forEach(layer => {
                 console.log(layer.type);
                 if (layer.type === "tilelayer") {
@@ -136,8 +138,13 @@ function onEnter(from, data) {
                 levelDataArray,
                 TilemapData.id_data,
                 mapTWidth,
-                Engine.TileMapRenderer.settings().tilesize
+                16 // NOTE: hardcoded.
             );
+            // Engine.PhysicsComponent.setTerrainMapBounds(
+            //     mapTWidth,
+            //     mapTHeight,
+            //     16
+            // )
 
 
             if (from.name === "main") {

@@ -1,4 +1,5 @@
 import * as Engine from "../engine.js";
+import { TILE_SIZE } from "../../modules/mysettings.js";
 /*
 
 future additions:
@@ -198,16 +199,13 @@ const ENT_GRID_HEIGHT_T = 5;
  */
 var ENT_CELLSIZE = 32;
 
-/**
- * IN PIXELS (not accounting for zoon), the size of a tile on the terrain
- */
-var TERRAIN_TILESIZE = 16;
+
 
 /**
  * if a cell has this many entities, more cannot be added to this cell, for performance reasons.
  * so may lead to weird behavior if too many in one cell.
  */
-const ENT_MAX_PER_CELL = 10;
+const ENT_MAX_PER_CELL = 5;
 
 /**
  * object key is flattened x,y of cell starting from 0 to e_g_w/h_t, bucket is list of entities at that location on this frame
@@ -269,46 +267,78 @@ var ent_grid_yMin_t = 0;
 var ent_grid_getCenter = null;
 
 
-/**
- * 1-D array representing 2-D grid of TILE IDs
- */
-var terrain_mapArr = null;
+// /**
+//  * Large 1-D array representing 2-D grid of TILE IDs, which represents what the map visually looks like. This array spans the entire map.
+//  */
+// var terrain_mapArr = null;
+
+
+//////ignore the comment below. Doing old method again.
+/////////////// : this file does not depend on the visual tilemap itself anymore. Instead it has addsurface methods that are snapped to a grid
+/////////////// meaning that instead of the oustide code setting the terrain_maparr, it will instead set a terrain_tilesize, grid width and height.
+/////////////// so the visuals of th etilemap are irrelevant within this file. Outside, it will read from the visual map and spam addsurface calls to build the physical terrain.
+///////////////////// so need to remove terrain_maparr and replace with above. also dont need a lot of other stuf
+
+
+
+// /**
+//  * Large array of arrays representing 2-D grid of SURFACES, which represents the environment that pc's cannot pass through. This array spans the entire map.
+//  * 
+//  * t_s_d's entries are either: null, a number, or a array of Surface objects. So it's a mixed array.
+//  * 
+//  * Structure of t_s_d is something like: [...null, Number, Number, null, [Surface, Surface], null, [Surface], null, ... [Surface], ... ]
+//  * 
+//  * null entry means nothing is at that cell.
+//  * 
+//  * number entry means the cell has a simple surface occupied in it, which is a surface that's aligned to the gridlines and is 1 gridwidth long.
+//  * 
+//  * array of surfaces as an entry means its a complex cell that may contain many surfaces (of any length and direction) whose bounding boxes may overlap that cell.
+//  * 
+//  * Maps can have millions of tiles so this should be efficient.
+//  * Upon map load (or before deployment?), it converts all the surfaces from the map data to t_s_d format (calculate which indeces in t_s_d each surface is at).
+//  * This calculation prepares t_s_d so each frame, each entity checks surfaces ONLY IN ITS CELL(S) instead of checking all surfaces.
+//  * 
+//  * Collision phase checks if a pc intersects with a surface, by checking if a surface is in one of the same cells as the pc.
+//  * 
+//  * Note that this array, since it has mixed data, is not in continguous block of memory. Iterating thru it is quite slow (we won't iterate all frequently). But accessing is still fast
+//  * 
+//  * @type {Array}
+//  */
+// var terrain_solid_data = null;
 
 //TODO STATIC!!!!!!!!!!!!!!!!
 //Static PC's should be added to some static grid (like terrain_mapArr) that DOESN'T CHANGE (or rarelt- can "break a block")
 //and any non-static PC can just check neighboring cells, then narrow phase to resolve
 
-/**
- * TOP means the tile has a collision edge at the top with a normal pointing UP
- * RIGHT means the tile has a collision edge on the right with a normal pointing RIGHT
- */
-const terrain_wall_type = {
-    SQUARE: 100,
-    DOWN: 8,  //1000
-    LEFT: 4, //0100
-    UP: 2, //0010
-    RIGHT: 1, //0001
+// /**
+//  * TOP means the tile has a collision edge at the top with a normal pointing UP
+//  * RIGHT means the tile has a collision edge on the right with a normal pointing RIGHT
+//  */
+// const terrain_wall_type = {
+//     SQUARE: 100,
+//     DOWN: 8,  //1000
+//     LEFT: 4, //0100
+//     UP: 2, //0010
+//     RIGHT: 1, //0001
 
-    // TOP_RIGHT: 8,
-    // BOTTOM_RIGHT: 9,
-    // BOTTOM_LEFT: 10,
-    // TOP_LEFT: 11
-    // TOP_AND_LEFT: 13,
-    // TOP_AND_RIGHT: 14,
-    // BOTTOM_AND_LEFT: 15,
-    // BOTTOM_AND_RIGHT: 16
-}
-/**
- * an object where: properties are the tile ID's, and the value is a Terrain Wall Type (number)
- * 
- * @type {Object.<number,number>}
- */
-var terrain_idData = null;
+//     // TOP_RIGHT: 8,
+//     // BOTTOM_RIGHT: 9,
+//     // BOTTOM_LEFT: 10,
+//     // TOP_LEFT: 11
+//     // TOP_AND_LEFT: 13,
+//     // TOP_AND_RIGHT: 14,
+//     // BOTTOM_AND_LEFT: 15,
+//     // BOTTOM_AND_RIGHT: 16
+// }
+// /**
+//  * an object where: properties are the tile ID's, and the value is a Terrain Wall Type (number)
+//  * 
+//  * @type {Object.<number,number>}
+//  */
+// var terrain_idData = null;
 
-/**
- * the width of the tile map in tiles.
- */
-var terrain_mapWidth = 0;
+
+
 
 /**
  * Holds <capacity> number of numbers. The number "0" is not counted as data, rather the lack thereof.
@@ -361,11 +391,12 @@ Bucket.prototype.reset = function () {
 
 
 /** Initialize every cell to an array of 0's (default/invalid entity IDs)
- * Total RAM needed for the grid alone is width * height * maxpercell * sizeof_js_number
+ * Total RAM needed for the grid alone is approx, or proportional to: width * height * maxpercell * sizeof_js_number
  * This has to be called exactly once. and the grid should only be modified not re-allocated ever.
  * 
- * Notes about the grid:
- * it will always have its top left at 0,0 UNLESS setGridCenterRef is set, then it will always follow that position.
+ * Notes about the entity grid:
+ * it's a region of the map where only the entities inside it will receive updates. It should follow the player; the player should be in the center.
+ * it will have its top left at 0,0 UNLESS setGridCenterRef is set, then it will always follow that position.
  */
 function initEntityGrid() {
     console.log("Init Grid start: " + Date.now());
@@ -402,296 +433,462 @@ function initEntityGrid() {
 //     }
 // }
 
+// function C_Surface(x1, y2, x2, y2, rev) {
+//     this.x1 = x1;
+//     this.y1 = y1;
+//     this.x2 = x2;
+//     this.y2 = y2;
+//     this.rev = rev;
+// }
 
+//////////Prob will replace the below with adding full solid shapes instead of arbitrary one-way surfaces
+// /**
+//  * Add surface of any direction and length. 
+//  * @param {*} rev bool, false to have the surface resolve up and left, true for down and right
+//  */
+// function terrain_add_complex_surface(x1, y1, x2, y2, rev) {
+//     //normal vector defaults to up and left, rev flips it
+
+//     //calculate which cell(s) to place this surface refernece into.
+
+//     let sur_x_min = _worldToEntGridX(x1); //x1 converted to the x position on the tsd grid (same bounds as ent grid), in cells.
+//     let sur_y_min = _worldToEntGridY(y1); // x2 "
+//     let sur_x_max = _worldToEntGridX(x2);
+//     let sur_y_max = _worldToEntGridY(y2);
+
+//     //Note that there's an inefficiency not accounted for, that gets worse with larger surfaces.
+//     //Because this adds the entier bounding rectangle of cells, not just the cells the line actually goes thru.
+//     //Not an issue for surfaces shorter than cell, or surface is clipped to the gridlines.
+//     //ex: a diagonal surface that actually intersects only 7 cells, may end up having 16 cells added.
+//     //This inefficiency persists during game updates as well because entities think they're in the same cell as a long diagonal surface while its stil far from it
+
+//     let tx = 0, ty = 0;
+
+//     let cell_index = 0;
+
+//     //for each cell that the surface intersects (surface's bounding box), add that surface to the cell.
+//     for (tx = sur_x_min; tx <= sur_x_max; tx++) {
+//         for (ty = sur_y_min; ty <= sur_y_max; ty++) {
+
+//             cell_index = tx + ty * terrain_mapWidth; //index of the cell of the terrain to add
+//             if (terrain_solid_data[cell_index] === null) {
+//                 //create an array there if it was null. (could also check if not an array instead.)
+//                 terrain_solid_data[cell_index] = new Array();
+//             }
+//             terrain_solid_data[cell_index].push(new C_Surface(x1, y1, x2, y2, rev));
+//         }
+//     }
+
+// }
+
+
+/////////////////////////// Solid terrain ////////////////////
+
+// /**
+//  * Array of numbers. Represents the environment that pc's can't pass through.
+//  * Number less than 16: unsigned 4 bit top,right,down,left edge is active.
+//  * 16,17,18,19: diagonals starting from topleft and clockwise
+//  * 
+//  */
+// var terrain_surface_data = null;
+
+var terrain_mapArr = null;
 
 /**
- * The only "call-every-frame" function relating to physics components...
- * 1. Moves all PC's based on its controller values.
- * 
- * Broad phase collision:
- * 2. update grid center, then adds every physicscomponent's entity ID to the grid by
- * adding its entityID to its appropriate location in the grid. (for now 1 entity has at most 1 hitbox)
- * 3. 
+ * Number less than 16: unsigned 4 bit top,right,down,left edge is active.
+ * 16,17,18,19: diagonals starting from topleft and clockwise
  */
-function updateAll() {
-    if (!ent_grid) {
-        throw "Pls. initialize the entity grid with initEntityGrid or collision aint gonna happen";
-    }
-    //debugger;
-    //MOVE & BROAD PHASE --------
+var terrain_id2sur = null;
 
-    //set grid center to whatever the function returns to if it has the func, and snap to cellsize...
-    if (typeof ent_grid_getCenter === "function") {
-        //debugger;
-        let wowo = ent_grid_getCenter(); //returns WORLD coordinates
-        ent_grid_xMin_t = _worldToTilemapCoord(wowo.x) - Math.floor(ENT_GRID_WIDTH_T / 2); //this HAS To be an integer
-        ent_grid_yMin_t = _worldToTilemapCoord(wowo.y) - Math.floor(ENT_GRID_HEIGHT_T / 2);
-    }
+//var terrain_mapHeight = 0;
+/**
+ * the width of the tile map in tiles.
+ */
+var terrain_mapWidth = 0;
 
+/**
+ * IN PIXELS (not accounting for zoon), the size of a tile on the terrain
+ */
+var TERRAIN_TILESIZE = 16;
 
-    let ctr = null;
-    let hitbox = null;
-    let pc = null;
+// though ti was doing this, then went back to old method where we set the tilemap directly here. 
+///**
+//  * Set the terrain map, the ID-to-surface conversion table, width of map, and tile size.
+//  * @param {*} mapWidth width of the tilemap in tiles
+//  * @param {*} mapHeight 
+//  * @param {*} tileSize num of pixels per tile
+//  */
+// function setTerrainMapBounds(mapWidth, mapHeight, tileSize = 16) {
 
-    //visitedCells.clear();
+//     //init t_s_d as large 1-D array of 0's.
+//     terrain_surface_data = new Array();
+//     for (let i = 0; i < mapWidth * tileSize; i++) {
+//         for (let j = 0; j < mapHeight * tileSize; j++) {
+//             terrain_surface_data[j + i * tileSize] = 0;
+//         }
+//     }
 
-    //first: for each PC, check if it's completely within the grid bounds, then move it, then RESOLVE w/ terrain, then add it to grid based on its bounds after the move & resolve.
+//     terrain_mapWidth = mapWidth;
+//     terrain_mapHeight = mapHeight;
+//     TERRAIN_TILESIZE = tileSize;
+// }
 
-    //for (let i = 0; i < physics_comps.length; i++) {
-    //physics_comps.forEach((pc, id, map) => {
-
-    // TODO since world is likely going to be pretty big, only update a handful of the closest entities, and recalculate the handful not every frame but every 30 frames for example.
-    for (const idStr in physics_comps) {
-        //ARBITRARY ORDER - no guarantee it is in order of lower to highest id
-
-        //const pc = physics_comps[i];
-        pc = physics_comps[idStr];
-        hitbox = pc._hitbox;
-
-        if (!hitbox) {
-            //didn't have a hitbox lol...
-            continue;
-        }
-        //pc hitbox is WITHIN physics update area //TODO
-        //IMPORTANT: hitbox must be fully within the bounds... will also check again before adding to entityGrid b/c this first check didn't account for the MOVE
-
-        //debugger;
-        let pcOldX = hitbox._xMin;
-        let pcOldY = hitbox._yMin;
-        if (hitbox._xMin >= ent_grid_xMin_t * ENT_CELLSIZE
-            && hitbox._yMin >= ent_grid_yMin_t * ENT_CELLSIZE
-            && hitbox._xMin + hitbox._width < (ent_grid_xMin_t + ENT_GRID_WIDTH_T) * ENT_CELLSIZE
-            && hitbox._yMin + hitbox._height < (ent_grid_yMin_t + ENT_GRID_HEIGHT_T) * ENT_CELLSIZE) {
+//Not doing below anymore, instead setting entire tilemap and a map from tileid to surface
+// /**
+//  * Define a cell, aligned with the tilemap, to enclose one or more surfaces that are either aligned to the top edge, right, bot, or left.
+//  * 
+//  * @param {*} cellX 0-indexed which cell on the x axis will this surface be placed
+//  * @param {*} cellY 
+//  * @param {*} num If unsigned 4 bit number, e.g. 1010, representing which sides are solid surfacez: top right down left. If 16,17,18,19: diagonals starting from topleft and clockwise
+//  */
+// function terrain_add_surface(cellX, cellY, num) {
+//     if (!terrain_surface_data) {
+//         throw "Terrain map bounds needs to be set, before defining surfaces on map."
+//     }
 
 
-            //move it (if control is defined)
-            if (pc._control) {
-                ctr = pc._control();
+//     if (cellX < 0 || cellY < 0) {
+//         throw "Cannot have negative indexes for cells."
+//     }
+//     if (cellX >= terrain_mapWidth) {
+//         throw "cellX is out of bounds."
+//         //needs to be checked or else out-of-bounds cellX's won't cause error because it may point to a good cell.
+//     }
+//     if (!Number.isInteger(num) || num < 1 || num > 19) {
+//         throw "needs to be an integer between 1 and 19 inc"
+//     }
 
-                hitbox._xMin += ctr.dx || 0;
-                hitbox._yMin += ctr.dy || 0;
-            }
-            /**
-             * x coord of the ALREADY-MOVED pc in tilemap cell coords
-             */
-            let pc_x_min_tilemap = _worldToTilemapCoord(hitbox._xMin);
-            let pc_y_min_tilemap = _worldToTilemapCoord(hitbox._yMin);
-            let pc_x_max_tilemap = _worldToTilemapCoord(hitbox._width + hitbox._xMin);
-            let pc_y_max_tilemap = _worldToTilemapCoord(hitbox._height + hitbox._yMin);
+//     let cell_index = cellX + cellY * terrain_mapWidth;
+//     let data = terrain_surface_data[cell_index];
 
-            //SOLID TERRAIN RESOLUTION - before even adding it to entity grid, first ensure no (rectangular) entity goes past a wall!
-            //by checking the bounding cells it's in.
+//     if (data === undefined) {
+//         throw "Cannot set a simple surface on a cell that's out of bounds.";
+//     }
+//     if (data === null) {
+//         //good that means we can set the value
+//         terrain_surface_data[cell_index] = num;
+//     }
 
-            //freeflow dont solidly handle with terrain.
-            if (pc._freeflow) {
-                if (typeof pc._postMove === "function") {
-                    pc._postMove(hitbox._xMin - pcOldX, hitbox._yMin - pcOldY);
-                }//sigh. just copy pasted thjis from the end...
-                continue;
-            }
-            //only handling rectangular hitboxes for now.
-            if (!(hitbox instanceof AABBHitbox)) {
-                continue;
-            }
-            //mapArr needs to be set so theres a terrain to collide and resolve with
-            //or else just skip to directly adding to grid (tilesize is at default 16)
-            if (terrain_mapArr) {
-                //er;
+//     //TODO: remove solid edge if both cells next to the edge have that edge marked as solid. So the wall there remains smooth.
+// }
 
 
-                let tileID;
-                let idData = 0;
-                let numWallsTop = 0; //lulw i tried. lets be honest. RIP!
-                let numWallsRight = 0;
-                let numWallsBot = 0;
-                let numWallsLeft = 0;
-                let tx = 0, ty = 0;
+//////////////////// Update method & helpers ///////////////////////////
 
-
-
-                //check all bounding cells for solid terrain: //(TODO OR STATIC OBJECTS?)
-
-                //debugger;
-                boundingCellLoop:
-                for (tx = pc_x_min_tilemap; tx <= pc_x_max_tilemap; tx++) {
-                    for (ty = pc_y_min_tilemap; ty <= pc_y_max_tilemap; ty++) {
-
-                        //only check edge/corner cells...
-                        if (tx > pc_x_min_tilemap && tx < pc_x_max_tilemap && ty > pc_y_min_tilemap && ty < pc_y_max_tilemap) {
-                            continue;
-                        }
-
-                        idData = terrain_idData[terrain_mapArr[tx + terrain_mapWidth * ty]];
-
-                        if (!idData) {
-                            //id doesn't have any solidity data
-                            continue;
-                        }
-                        //debugger;
-                        break; //////////////////////////////////ALERT terrain collision off
-                        //will do better system anyway.
-                        ////////////////////////////////
-                        switch (idData) {
-
-                            //line cases: resolve NOW in respective direction, while checking it is actually inthat direction
-                            case terrain_wall_type.DOWN:
-                                if (ty === pc_y_min_tilemap) {
-                                    //push down
-                                    hitbox._yMin = (pc_y_min_tilemap + 1) * TERRAIN_TILESIZE;
-                                }
-                                break;
-                            case terrain_wall_type.RIGHT:
-                                if (tx === pc_x_min_tilemap) {
-                                    //push right
-                                    hitbox._xMin = (pc_x_min_tilemap + 1) * TERRAIN_TILESIZE;
-                                }
-                                break;
-                            case terrain_wall_type.LEFT:
-                                if (tx === pc_x_max_tilemap) {
-                                    //push left
-                                    hitbox._xMin = pc_x_max_tilemap * TERRAIN_TILESIZE - hitbox._width - 0.01; //tiny amount to avoid persistent collision
-                                }
-                                break;
-                            case terrain_wall_type.UP:
-                                if (ty === pc_y_max_tilemap) {
-                                    //push up
-                                    hitbox._yMin = pc_y_max_tilemap * TERRAIN_TILESIZE - hitbox._height - 0.01;
-                                }
-                                break;
-                            case terrain_wall_type.DOWN | terrain_wall_type.LEFT:
-                                // |__
-                                if (ty === pc_y_min_tilemap || tx === pc_x_max_tilemap) {
-                                    //correct location rel to player
-
-
-                                    //check whether intersecting the topwall or the rightwall is greater disp. (make sure both are positive numbers)
-
-                                    if ((ty + 1) * TERRAIN_TILESIZE - hitbox._yMin < hitbox._xMin + hitbox._width - (tx) * TERRAIN_TILESIZE) {
-                                        //top won (is smaller) (Default) so push down
-                                        hitbox._yMin = (pc_y_min_tilemap + 1) * TERRAIN_TILESIZE;
-                                    } else {
-                                        //right won so push left
-                                        hitbox._xMin = pc_x_max_tilemap * TERRAIN_TILESIZE - hitbox._width - 0.01;
-                                    }
-
-
-                                }
-                                break;
-                            case terrain_wall_type.DOWN | terrain_wall_type.RIGHT:
-                                //  __|
-
-                                if (ty === pc_y_min_tilemap || tx === pc_x_min_tilemap) {
-                                    if ((ty + 1) * TERRAIN_TILESIZE - hitbox._yMin < (tx + 1) * TERRAIN_TILESIZE - hitbox._xMin) {
-                                        //top won (is smaller) so push down
-                                        hitbox._yMin = (pc_y_min_tilemap + 1) * TERRAIN_TILESIZE;
-                                    } else {
-                                        //left won, so push right
-                                        hitbox._xMin = (pc_x_min_tilemap + 1) * TERRAIN_TILESIZE;
-                                    }
-                                }
-                                break;
-                            case terrain_wall_type.UP | terrain_wall_type.LEFT:
-                                //  __
-                                // |
-                                if (ty === pc_y_max_tilemap || tx === pc_x_max_tilemap) {
-                                    if (hitbox._yMin + hitbox._height - (ty) * TERRAIN_TILESIZE < hitbox._xMin + hitbox._width - (tx) * TERRAIN_TILESIZE) {
-                                        //bottom won (is smaller) so push up
-                                        hitbox._yMin = pc_y_max_tilemap * TERRAIN_TILESIZE - hitbox._height - 0.01;
-                                    } else {
-                                        //right won so push left
-                                        hitbox._xMin = pc_x_max_tilemap * TERRAIN_TILESIZE - hitbox._width - 0.01;
-                                    }
-                                }
-                                break;
-                            case terrain_wall_type.UP | terrain_wall_type.RIGHT:
-                                // __
-                                //   |
-                                if (ty === pc_y_max_tilemap || tx === pc_x_min_tilemap) {
-                                    if (hitbox._yMin + hitbox._height - (ty) * TERRAIN_TILESIZE < (tx + 1) * TERRAIN_TILESIZE - hitbox._xMin) {
-                                        //bottom won (is smaller) so push up
-                                        hitbox._yMin = pc_y_max_tilemap * TERRAIN_TILESIZE - hitbox._height - 0.01;
-                                    } else {
-                                        //left won so push right
-                                        hitbox._xMin = (pc_x_min_tilemap + 1) * TERRAIN_TILESIZE;
-                                    }
-                                }
-                                break;
-                        }
-                    }
-                    //end bounding cell loop
-                }
-                //END SOLIDITY RESOLUTION
-            }
-
-            // pc.postMove();
-
-
-            //START ADDING TO ENTITY GRID (has different bounds than tilemap if not at 0,0)
-            //add the entity (ID) into the grid based on its AABBs. (hitbox's xMin, yMin, width, height)
-
-            let pc_x_min_ent_grid = _worldToEntGridX(hitbox._xMin);
-            let pc_y_min_ent_grid = _worldToEntGridY(hitbox._yMin);
-            let pc_x_max_ent_grid = _worldToEntGridX(hitbox._width + hitbox._xMin);
-            let pc_y_max_ent_grid = _worldToEntGridY(hitbox._height + hitbox._yMin);
-
-            let entBucket;
-            let tx = 0, ty = 0;
-            //for each cell that PC (which is completely within the physics bounds) is in, add it to respective bucket.
-            pcAddGrid:
-            for (tx = pc_x_min_ent_grid; tx <= pc_x_max_ent_grid; tx++) {
-                for (ty = pc_y_min_ent_grid; ty <= pc_y_max_ent_grid; ty++) {
-                    //do not add negative coords???
-                    //not sure what to do with negative coords...
-                    if (tx < 0 || ty < 0) {
-                        console.log("NEGATIVE COORDS");
-                        continue;
-                    }
-                    //debugger;
-                    //currCell = ent_grid[tx][ty]; 
-                    entBucket = ent_grid[tx + ty * ENT_GRID_WIDTH_T]//cell pos (flattened) relative to the ENT GRID!
-                    if (!entBucket) {
-                        console.log("one part of entity " + idStr + " moved outside of physArea while it was inside it before move, not adding part to grid");
-                        continue;
-                    }
-
-                    // //first, clear the bucket if this cell HASN'T been visited on this frame yet
-                    // //this is to avoid adding to old data
-                    // if (!visitedCells.has(currCell)) {
-                    //     entBucket.reset();
-                    // }
-
-                    //bucket will be cleared AFTER handled.
-                    //entBucket = ent_grid[currCell];
-                    //entBucket.add(pc.entityID);
-                    entBucket.add(parseInt(idStr));
-                    //visitedCells.add(currCell); //adds duplicates, BAD
-                }
-            }
-            //added to grid
-
-            //end if in update area
-        } else {
-            //console.log(idStr + " NOT IN AREA");
-        }
-
-
-        // //end of physiccomps.forEach for solidity resolution
-        //});
+/**
+ * Resolve the given pc with the static map terrain.
+ * 
+ * only used by updateAll while its looping thru each ent
+ * @param {PhysicsComponent} pc 
+ * @param {AABBHitbox} hitbox 
+ */
+function _update_resolve_terrain(pc, hitbox) {
+    //freeflow dont solidly handle with terrain.
+    if (pc._freeflow) {
         if (typeof pc._postMove === "function") {
             pc._postMove(hitbox._xMin - pcOldX, hitbox._yMin - pcOldY);
-        }
-        //end iterating physicsComps
+        }//sigh. just copy pasted thjis from the end...
+        return;
     }
 
 
 
-    //solidity resolution done, & all entities in update area added to grid
-    //Entities will STAY PUT for the rest of the step from here on.
+    //SOLID TERRAIN RESOLUTION - before even adding it to entity grid, first move entities to stop colliding with a surface.
+    //by checking the bounding cells it's in.
+    //note that solid terrain definitions are aligned on the tilemap, not the entity grid.
 
-    //~~~~~~~~~~~~~~NARROW PHASE COLLISION
-    //For each visited cell, only if theres >=2 ents in them, brute force check them then narrow phase collision 
-    //for the cell after everything inside it is handled, CLEAR the bucket
 
+
+    //RECT ONLY FOR NOW:
+    //At this point in the code the hitbox must be rectangular.
+
+
+    // //mapArr needs to be set so theres a terrain to collide and resolve with
+    // //or else just skip to directly adding to grid (tilesize is at default 16)
+    // if (!terrain_mapArr) {
+    //     console.log("physics system does not have a tilemap associated with it");
+    //     return;
+    // }
+    //NOTE: dont need the above because t_maparr is aesthetics only since the surface adding and parsing happens in addsurface methods.
+
+    //map arr exists. lets resolve each entity from the surface using n-reso
+
+    let tx = 0, ty = 0;
+    let min_res; //minimum resolution amount.
+    let min_res_dir = null; //the direction, in degrees inverted-y, 0 to 359.99, corresponding to the min res amount
+
+    //for each of the pc's border cells, check if any overlap a surface.
+
+    //let first_dir = null; //angle of resolution on the first run
+    let prev_tile = null; //the index in t_mapArr of the tile that resolved in the previous run (first run)
+    let prev_tile_temp = null; //tentative of prev_tile
+
+    for (let n = 0; n < 2; n++) { //resolve at max 2 times. But the 2nd time's angle must be different from the first time's.
+
+        //x coord of the ALREADY-MOVED pc in tilemap cell coords
+        let pc_x_min_tilemap = _worldToTilemapCoord(hitbox._xMin);
+        let pc_y_min_tilemap = _worldToTilemapCoord(hitbox._yMin);
+        let pc_x_max_tilemap = _worldToTilemapCoord(hitbox._width + hitbox._xMin);
+        let pc_y_max_tilemap = _worldToTilemapCoord(hitbox._height + hitbox._yMin);
+        min_res = Number.MAX_SAFE_INTEGER;
+
+        ///// FINDING RESOLUTION AMOUNT /////////////
+
+        for (tx = pc_x_min_tilemap; tx <= pc_x_max_tilemap; tx++) {
+            for (ty = pc_y_min_tilemap; ty <= pc_y_max_tilemap; ty++) {
+
+                //only check border cells, (for efficiency for large pc's) :
+                if (tx > pc_x_min_tilemap && tx < pc_x_max_tilemap && ty > pc_y_min_tilemap && ty < pc_y_max_tilemap) {
+                    continue;
+                }
+
+                //let cell_data = terrain_surface_data[tx + ty * terrain_mapWidth];
+                let tile = tx + ty * terrain_mapWidth;
+                if (tile === prev_tile) {
+                    console.log("yes.");
+                    continue; //do not resolve the same tile twice. (since n=2 we good. but for some reason want higher n then a list is necessary ripz)
+                }
+
+                let sur_type = terrain_id2sur[terrain_mapArr[tile]]; //get tileID at loc, then get the corersponding surface type of that id
+
+                if (sur_type === undefined) {
+                    continue; //id was not mapped to any surface type (most common)
+                }
+
+                //cell-wise resolution: we consider each cell's resolution amount. if its smaller we'll replace the old reso amt.
+
+                //premise: check each border cell and record the smallest resolution amount among them, along with the corresponding direction to resolve
+                //Then actually resolve with those recorded mag and dir. so the pc has new bounds.
+                //then, repeat entire process, the double for loop and stuff (for now). which may result in a second resolution.
+
+                let res = 0; // resolution amount for the current cell
+
+                let vx = 0, vy = 0; //local for diag cases
+                switch (sur_type) {
+                    //simple cases (4 bit unsigned int): record the resolution
+                    //one-hot cases.
+                    case 1: //top surface, below pc. push up.
+                        res = hitbox._yMin + hitbox._height - ty * TERRAIN_TILESIZE; //this has to be positive. not doing abs.
+                        if (res < min_res) {
+                            min_res = res;
+                            min_res_dir = 270;
+                            prev_tile_temp = tile;
+                        }
+                        continue; //goto next cell since this cell's only 1 edge.\
+
+                    case 2: //right surface, left of pc. push right
+                        res = (tx + 1) * TERRAIN_TILESIZE - hitbox._xMin;
+                        if (res < min_res) { min_res = res; min_res_dir = 0; prev_tile_temp = tile; }
+                        continue;
+
+                    case 4: //down surface, above pc. push down
+                        res = (ty + 1) * TERRAIN_TILESIZE - hitbox._yMin;
+                        if (res < min_res) { min_res = res; min_res_dir = 90; prev_tile_temp = tile; }
+                        continue;
+
+                    case 8: //left surface, right of pc. push left
+                        res = hitbox._xMin + hitbox._width - tx * TERRAIN_TILESIZE;
+                        if (res < min_res) { min_res = res; min_res_dir = 180; prev_tile_temp = tile; }
+                        continue;
+
+                    //////////////Diagonal cases////////////
+                    case 16:
+                        //16: <-/
+                        //top left diag 45 (its normal points to top left.) 
+                        //only consider it if botright vertex of rect pc is actually past the surface, within the diamond square area past surface.
+                        //can do this by translating origin to the center of the diamond.
+                        //Then if the abs(x)+abs(y) <= 1 tile width, it is inside the diamond. x and y are the translated x,y of the botright vertex.
+                        vx = hitbox._xMin + hitbox._width - (tx + 1) * TERRAIN_TILESIZE; //translated botright vertex, relative to the origin of diamond center
+                        vy = hitbox._yMin + hitbox._height - (ty + 1) * TERRAIN_TILESIZE; //Inverted y?
+
+                        if (Math.abs(vx) + Math.abs(vy) <= TERRAIN_TILESIZE) {
+                            res = _point_line_dist(vx, vy, -TERRAIN_TILESIZE, 0, 0, -TERRAIN_TILESIZE); //calling dist with translated coords.
+                            if (res < min_res) {
+                                min_res = res;
+                                min_res_dir = 225;
+                                prev_tile_temp = tile;
+                            }
+                        }
+                        continue;
+                    case 17:
+                        //17: \->
+                        //top right diag 45
+                        vx = hitbox._xMin - (tx) * TERRAIN_TILESIZE; //translated botleft vertex
+                        vy = hitbox._yMin + hitbox._height - (ty + 1) * TERRAIN_TILESIZE;
+
+                        if (Math.abs(vx) + Math.abs(vy) <= TERRAIN_TILESIZE) {
+                            res = _point_line_dist(vx, vy, TERRAIN_TILESIZE, 0, 0, -TERRAIN_TILESIZE); //calling dist with translated coords.
+                            if (res < min_res) { min_res = res; min_res_dir = 315; prev_tile_temp = tile; }
+                        }
+                        continue;
+                    case 18:
+                        //18: /->
+                        //bot right diag 45
+                        vx = hitbox._xMin - (tx) * TERRAIN_TILESIZE; //translated topleft vertex
+                        vy = hitbox._yMin - (ty) * TERRAIN_TILESIZE;
+
+                        if (Math.abs(vx) + Math.abs(vy) <= TERRAIN_TILESIZE) {
+                            res = _point_line_dist(vx, vy, 0, TERRAIN_TILESIZE, TERRAIN_TILESIZE, 0); //calling dist with translated coords.
+                            if (res < min_res) { min_res = res; min_res_dir = 45; prev_tile_temp = tile; }
+                        }
+
+                        continue;
+                    case 19:
+                        //19: <-\
+                        //bot left diag 45
+
+                        vx = hitbox._xMin + hitbox._width - (tx + 1) * TERRAIN_TILESIZE; //translated topright vertex
+                        vy = hitbox._yMin - (ty) * TERRAIN_TILESIZE;
+
+                        if (Math.abs(vx) + Math.abs(vy) <= TERRAIN_TILESIZE) {
+                            res = _point_line_dist(vx, vy, -TERRAIN_TILESIZE, 0, 0, TERRAIN_TILESIZE); //calling dist with translated coords.
+                            if (res < min_res) { min_res = res; min_res_dir = 135; prev_tile_temp = tile; }
+                        }
+                        continue;
+
+                }
+
+                //not one-hot: (much rarer case than one-hot, ~90% of all walls are one-hot simple. most optimization in the one hot cases)
+                //record the minimum res of the 2 or 3 or 4 edges that it was simutaneously incident to.
+
+                if ((sur_type & 1) === 1) {
+                    //same as above but is cascading cases instead of exclusive...
+
+                    res = hitbox._yMin + hitbox._height - ty * TERRAIN_TILESIZE;
+                    if (res < min_res) { min_res = res; min_res_dir = 270; prev_tile_temp = tile; }
+
+                }
+                if ((sur_type & 2) === 2) {
+                    res = (tx + 1) * TERRAIN_TILESIZE - hitbox._xMin;
+                    if (res < min_res) { min_res = res; min_res_dir = 0; prev_tile_temp = tile; }
+                }
+                if ((sur_type & 4) === 4) {
+                    res = (ty + 1) * TERRAIN_TILESIZE - hitbox._yMin;
+                    if (res < min_res) { min_res = res; min_res_dir = 90; prev_tile_temp = tile; }
+                }
+                if ((sur_type & 8) === 8) {
+                    res = hitbox._xMin + hitbox._width - tx * TERRAIN_TILESIZE;
+                    if (res < min_res) { min_res = res; min_res_dir = 180; prev_tile_temp = tile; }
+                }
+
+
+                //The minimum resolution amount wins. However this entire process will be repeated up to n times to handle concave cases. End an interation early if it detects no collision.
+                //The limit n is needed or it may cause an infinite loop (keeps on resolving), killing the browser.
+                //make n just 2 lol
+            }
+        }
+        //END for each pc border cell.
+
+        /////// RESOLUTION //////
+
+        //if min res is not still the MAX INTEGER then it has been found
+        //then move pc by that amount.
+        //return;
+        if (min_res !== Number.MAX_SAFE_INTEGER) {
+            //for cleanly doing the axis cases without float inaccuracy
+            switch (min_res_dir) {
+                case 0:
+                    hitbox._xMin += min_res;
+                    break;
+                case 90:
+                    hitbox._yMin += min_res;
+                    break;
+                case 180:
+                    hitbox._xMin -= min_res;
+                    break;
+                case 270:
+                    hitbox._yMin -= min_res;
+                    break;
+
+                default:
+                    //non axis, trig
+                    hitbox._xMin += min_res * Math.cos(Math.PI / 180 * min_res_dir);
+                    hitbox._yMin += min_res * Math.sin(Math.PI / 180 * min_res_dir);
+                    break;
+
+            }
+
+            prev_tile = prev_tile_temp;
+            //first_dir = min_res_dir; //nah fam check the tiles instead.
+
+            //console.log(pc.entityID + " RESOLVED " + n + " frame " + Engine.getFramesElapsed() + " min res "+min_res+" dir "+min_res_dir);
+
+        } else {
+
+
+            //did not find min res, meaning did not collide with anyhting
+            //we wont move the pc at all then and wont check again
+            return;
+
+        }
+
+
+
+    } //end for n<2
+
+    //END SOLIDITY RESOLUTION
+
+
+}
+
+/**
+ * Add the given hitbox to the entity grid.
+ * 
+ * only used by updateAll whil looping thru each ent
+ * @param {*} hitbox hitbox of the entity that's being added.
+ */
+function _update_add_ent_to_grid(pc, hitbox) {
+    //add the entity (ID) into the grid based on its AABBs. (hitbox's xMin, yMin, width, height)
+
+    let pc_x_min_ent_grid = _worldToEntGridX(hitbox._xMin);
+    let pc_y_min_ent_grid = _worldToEntGridY(hitbox._yMin);
+    let pc_x_max_ent_grid = _worldToEntGridX(hitbox._width + hitbox._xMin);
+    let pc_y_max_ent_grid = _worldToEntGridY(hitbox._height + hitbox._yMin);
+
+    let entBucket;
+    let tx = 0, ty = 0;
+
+    //for each cell that PC's bounding box (that is completely within the physics bounds) is in, add it to respective bucket.
+    pcAddGrid:
+    for (tx = pc_x_min_ent_grid; tx <= pc_x_max_ent_grid; tx++) {
+        for (ty = pc_y_min_ent_grid; ty <= pc_y_max_ent_grid; ty++) {
+            //do not add negative coords???
+            //not sure what to do with negative coords...
+            if (tx < 0 || ty < 0) {
+                console.log("NEGATIVE COORDS on ent grid. toppleft is off the ent grid");
+                continue;
+            }
+
+            //currCell = ent_grid[tx][ty]; 
+            entBucket = ent_grid[tx + ty * ENT_GRID_WIDTH_T]//cell pos (flattened) relative to the ENT GRID!
+            if (!entBucket) {
+                console.log("one part of entity " + pc.entityID + " moved outside of physArea while it was inside it before move, not adding part to grid");
+                //this is because the parameters pc and hitbox are the ones that are within the physArea bounds BEFORE resolving with terrain (moving).
+                //so this is incase the resolution actually pushes some parts of the pc out of the ent grid: just skip this.
+                continue;
+            }
+
+            // //first, clear the bucket if this cell HASN'T been visited on this frame yet
+            // //this is to avoid adding to old data
+            // if (!visitedCells.has(currCell)) {
+            //     entBucket.reset();
+            // }
+
+            //bucket will be cleared AFTER handled.
+            //entBucket = ent_grid[currCell];
+            entBucket.add(pc.entityID);
+            //entBucket.add(parseInt(idStr));
+            //visitedCells.add(currCell); //adds duplicates, BAD
+        }
+    }
+}
+
+/**
+ * Among hitboxes in the grid, check if they actually collided and call handlers if they did.
+ * 
+ * Only used by the update method, called every frame.
+ */
+function _update_narrow_phase() {
     /**
      * @type {Bucket}
      */
@@ -700,7 +897,7 @@ function updateAll() {
     //for (let i = 0; i < visitedCells.size; i++) {
     //  entBucket = ent_grid[visitedCells.get(i)];
 
-    //FOR EACH CELL! (should have no big memory allocs, and smooth for any reasonable number of ents) (but wastes cpu cycles b/c ALWAYS checks ALL cells (ent grid width * height)
+    //FOR EACH ENTITYGRID CELL! (should have no big memory allocs, and smooth for any reasonable number of ents) (but wastes cpu cycles b/c ALWAYS checks ALL cells (ent grid width * height)
     for (let i = 0; i < ENT_GRID_WIDTH_T; i++) {
         //cellCol = ent_grid[i];
         for (let j = 0; j < ENT_GRID_HEIGHT_T; j++) {
@@ -721,6 +918,7 @@ function updateAll() {
                         hash = _cantorHash_unordered(idA, idB); //hash the ID combination
                         if (checked_pairs.has(hash)) {
                             //ignore pair that has already been checked
+                            console.log("ALREADY CHECKKKKKKKKKKD XDXDXDXDXD");
                             continue;
                         }
                         // pcA = physics_comps.get(idA);
@@ -738,7 +936,6 @@ function updateAll() {
                         )) {
                             //NARROW PHASE PASSED!!!
 
-                            debugger;
                             //use new handler -- call the handler function for the two types (both need to have GameData AND a handling function!!!)
                             let dataA = Engine.GameEntity.getData(pcA.entityID);
                             let dataB = Engine.GameEntity.getData(pcB.entityID);
@@ -793,80 +990,129 @@ function updateAll() {
     for (let k of collided_pairs.keys()) {
         if (collided_pairs.get(k) === false) {
             collided_pairs.delete(k);
-            console.log("removed "+k+"(hash) from collided pairs");
+            console.log("removed " + k + "(hash) from collided pairs");
             //Note: this is filtering within the iterating function, works in js but may not in other languages
         }
     }
     for (let k of collided_pairs.keys()) {
         collided_pairs.set(k, false);
     }
-    //old way below didnt work
-    // //call onexit for the pairs (hashed num) in prev but not in curr. (set difference) // TODO
-    // prev_collided_pairs.forEach(pair => {
-    //     if (!curr_collided_pairs.has(pair)) {
-    //         //inefficient doing has() in for each?
-    //         let inv = _inverse_cantor(pair);
-    //         console.log(inv.x + " STOPPED COLLIDING WITH " + inv.y);
-    //         // TODO call onexit
-    //     }
-    // });
-    // //then advance the two collided_pairs sets, doing prev=curr and clearing curr (clearing for next frame to fill.)
-    // prev_collided_pairs = curr_collided_pairs.;
-    // curr_collided_pairs.clear();
+}
 
-    //~~~~~~~~~~~~~HANDLING QUERIES
-    // queries.forEach(query => {
-    //     let hitbox = query.hitbox;
-    //         ///////////////////////////  HELP - PROBABLY NOT DOING QUERYING. IT ADDS MORE OVERHEAD BUT JUST REPEATS CODE. ALSO WHAT IS THE ENTITY ID OF THE QUERY???
-    //         ////////////////////////////  ALSO IT'S WEIRD TO USE IT IN THE HANDLERDEF AS WELL AS THE NATURE OF A QUERY IS DIFFERENT FROM A HITBOX,
-    //         ///////////////////////////            YET THE HANDLER CODE IS IN THE SAME FILE.
-    //         //////////// so will probably have hitbox active / inactive instead...
-    //     let q_x_min_ent_grid = _worldToEntGridX(hitbox._xMin);
-    //     let q_y_min_ent_grid = _worldToEntGridY(hitbox._yMin);
-    //     let q_x_max_ent_grid = _worldToEntGridX(hitbox._width + hitbox._xMin);
-    //     let q_y_max_ent_grid = _worldToEntGridY(hitbox._height + hitbox._yMin);
+/**
+ * The only "call-every-frame" function relating to physics components...
+ * 1. Moves all PC's based on its controller values.
+ * 
+ * Broad phase collision:
+ * 2. update grid center, then adds every physicscomponent's entity ID to the grid by
+ * adding its entityID to its appropriate location in the grid. (for now 1 entity has at most 1 hitbox)
+ * 3. 
+ */
+function updateAll() {
+    if (!ent_grid) {
+        throw "Pls. initialize the entity grid with initEntityGrid or collision aint gonna happen";
+    }
+    //MOVE & BROAD PHASE --------
 
-    //     //need to check the cells that the hitbox's aabb overlaps, for any other entities
-    //     //then resolve with each overlapping entity. using the collision handler method.
-    //     let tx, ty;
-    //     for (tx = q_x_min_ent_grid; tx <= q_x_max_ent_grid; tx++) {
-    //         for (ty = q_y_min_ent_grid; ty <= q_y_max_ent_grid; ty++) {
-    //             //do not add negative coords???
-    //             //not sure what to do with negative coords...
-    //             if (tx < 0 || ty < 0) {
-    //                 console.log("NEGATIVE COORDS2");
-    //                 continue;
-    //             }
+    //set grid center to whatever the function returns to if it has the func, and snap to cellsize...
+    if (typeof ent_grid_getCenter === "function") {
+        let wowo = ent_grid_getCenter(); //returns WORLD coordinates
+        ent_grid_xMin_t = _worldToEntCoord(wowo.x) - Math.floor(ENT_GRID_WIDTH_T / 2); //this HAS To be an integer
+        ent_grid_yMin_t = _worldToEntCoord(wowo.y) - Math.floor(ENT_GRID_HEIGHT_T / 2);
+    }
 
-    //             let entBucket = ent_grid[tx + ty * ENT_GRID_WIDTH_T];
-    //             console.log(entBucket);
-    //             for (let i = 0; i < entBucket.size; i++) {
-    //                 let entID = entBucket.get(i);
-    //                 //use new handler
-    //                 let data = Engine.GameEntity.getData(entID);
-    //                 if (!data) {
-    //                     console.log("RIP");
-    //                     continue;
-    //                 }
 
-    //                 //The function actually needs to exist (and be a function)
-    //                 let func = collision_table[data.constructor.name + "|" + query.type.constructor.name];
-    //                 if (typeof func !== "function") {
-    //                     console.log("couldnt find handler function for " + data.constructor.name + " and " + query.type.constructor.name);
-    //                     continue;
-    //                 }
-    //                 func(pcA.entityID, pcB.entityID);
+    let ctr = null;
+    let hitbox = null;
+    let pc = null;
 
-    //             }
+    //visitedCells.clear();
 
-    //         }
-    //     }
-    // });
-    // queries.clear();
+    //first: for each PC, check if it's completely within the grid bounds, then move it, then RESOLVE w/ terrain, then add it to grid based on its bounds after the move & resolve.
+
+    //for (let i = 0; i < physics_comps.length; i++) {
+    //physics_comps.forEach((pc, id, map) => {
+
+    // TODO since world is likely going to be pretty big, only update a handful of the closest entities, and recalculate the handful not every frame but every 30 frames for example.
+
+    //FOR EACH PC:
+    for (const idStr in physics_comps) {
+
+        //ARBITRARY ORDER - no guarantee it is in order of lower to highest id (? verify?)
+
+        //const pc = physics_comps[i];
+        pc = physics_comps[idStr];
+        hitbox = pc._hitbox;
+
+        if (!hitbox) {
+            //didn't have a hitbox lol...
+            continue;
+        }
+
+        //only handling rectangular hitboxes for now. if not rect then it doesnt really exist.
+        if (!(hitbox instanceof AABBHitbox)) {
+            continue;
+        }
+
+        //pc hitbox is WITHIN physics update area //TODO
+        //IMPORTANT: hitbox must be fully within the bounds... will also check again before adding to entityGrid b/c this first check didn't account for the MOVE
+
+        let pcOldX = hitbox._xMin;
+        let pcOldY = hitbox._yMin;
+        //check if pc is inside the entity grid:
+        if (hitbox._xMin >= ent_grid_xMin_t * ENT_CELLSIZE
+            && hitbox._yMin >= ent_grid_yMin_t * ENT_CELLSIZE
+            && hitbox._xMin + hitbox._width < (ent_grid_xMin_t + ENT_GRID_WIDTH_T) * ENT_CELLSIZE
+            && hitbox._yMin + hitbox._height < (ent_grid_yMin_t + ENT_GRID_HEIGHT_T) * ENT_CELLSIZE) {
+
+
+            //move the pc, if control is defined
+            if (pc._control) {
+                ctr = pc._control();
+
+                hitbox._xMin += ctr.dx || 0;
+                hitbox._yMin += ctr.dy || 0;
+            }
+
+            //resolve the entity with terrain before doing collision with other entitites.
+            _update_resolve_terrain(pc, hitbox);
+
+            // pc.postMove();
+
+
+            //START ADDING TO ENTITY GRID (has different bounds than tilemap if not at 0,0)
+            _update_add_ent_to_grid(pc, hitbox);
+            //added to grid
+
+            //end if in update area
+        } else {
+            //console.log(idStr + " NOT IN AREA");
+        }
+
+
+        // //end of physiccomps.forEach for solidity resolution
+        //});
+        if (typeof pc._postMove === "function") {
+            pc._postMove(hitbox._xMin - pcOldX, hitbox._yMin - pcOldY);
+        }
+        //end iterating physicsComps
+    }
+    //solidity resolution done, & all entities in update area added to grid
+    //Entities will STAY PUT for the rest of the step from here on. ( // TODO solid moving pc's.)
+
+    //~~~~~~~~~~~~~~NARROW PHASE COLLISION, BETWEEN ENTITIES.
+    //For each visited cell, only if theres >=2 ents in them, brute force check them then narrow phase collision 
+    //for the cell after everything inside it is handled, CLEAR the bucket
+
+    _update_narrow_phase();
 
 
 }
 //END UPDATEALL-------------------------------------------------------------------------------
+
+
+
+////////////// math helpers
 
 /**
  * returns UNIQUE int given 2 ints, but order of the 2 ints does NOT matter.
@@ -926,6 +1172,19 @@ function _midpoint(x1, y1, x2, y2) {
     return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
 }
 
+/**
+ * 
+ * @param {*} x0 point x
+ * @param {*} y0 point y
+ * @param {*} x1 line x1
+ * @param {*} y1 
+ * @param {*} x2 line x2
+ * @param {*} y2 
+ */
+function _point_line_dist(x0, y0, x1, y1, x2, y2) {
+    return Math.abs((x2 - x1) * (y1 - y0) - (x1 - x0) * (y2 - y1))
+        / Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
+}
 
 
 // /**
@@ -936,8 +1195,8 @@ function _midpoint(x1, y1, x2, y2) {
 // }
 
 /**
- * converts a world coord to ENTITY GRID CELL COORDS.
- * Assume the entity grid has its top-left at e_g_x_t and e_g_y_t, is "snapped" to the tilesize of the tilemap
+ * converts a world coord to ENTITY GRID CELL COORDS: coordinates relative to the entity grid.
+ * Assume the entity grid has its top-left at e_g_x_t and e_g_y_t, is "snapped" to ent_cellsize grid
  */
 function _worldToEntGridX(x) {
     return Math.floor((x - ent_grid_xMin_t * ENT_CELLSIZE) / ENT_CELLSIZE);
@@ -954,8 +1213,17 @@ function _worldToEntGridY(y) {
  * 
  * ex if size=16, then like 31.9999 will be 1, 16.000 will be 1
  */
-function _worldToTilemapCoord(num) {
+function _worldToEntCoord(num) {
     return Math.floor(num / ENT_CELLSIZE);
+}
+
+/**
+ * scales a world coordinate to a coordinate scaled to the Tile map
+ * 
+ * ex if size=16, then like 31.9999 will be 1, 16.000 will be 1
+ */
+function _worldToTilemapCoord(num) {
+    return Math.floor(num / TILE_SIZE);
 }
 
 /**
@@ -966,18 +1234,30 @@ function getCount() {
 }
 
 /**
- * Set a solid collision "map" related to the tilemap, where certain IDs on the tilemap array actually refer to "solid" cells, OR lines.
- * This is necessary for entities to have solid collision with tiles on a tilemap
+ * Set a array of tile IDs (1-D array representing 2-D, so also specify the width as mapWidth)
+ * 
+ * ALSO initializes the surface data of the same size
+ * 
  * @param mapArr an array of TILE ID's
- * @param {Object.<number, number>} idData an object where: properties are the tile ID's, and the value is a Terrain Wall Type (number)
+ * @param {Object.<number, number>} idData an object where: properties are the tile ID's, and the value is a surface type 
  * @param mapWidth width of the mapArr in TILES
  * @param tileSize usually 16
  */
-function setTerrainMap(mapArr, idData, mapWidth, tileSize = 16) {
+function setTerrainMap(mapArr, id2sur, mapWidth, tileSize = 16) {
+    if (!Array.isArray(mapArr) || typeof id2sur !== "object" || typeof mapWidth !== "number" || !Number.isInteger(tileSize)) {
+        debugger;
+        throw "no.";
+    }
+
     terrain_mapArr = mapArr;
-    terrain_idData = idData;
+    terrain_id2sur = id2sur;
     terrain_mapWidth = mapWidth;
     TERRAIN_TILESIZE = tileSize;
+
+    // terrain_solid_data = new Array();
+    // for (let i = 0; i < mapArr.length; i++) {
+    //     terrain_solid_data[i] = null; //initalize all elems to null to start out. big array.
+    // }
 }
 
 /**
@@ -1072,7 +1352,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
     //loop thru all tiles that are on screen and check all
     let tx = 0, ty = 0;
     let tileID = 0;
-    let data = 0;
+    let sur_type = 0;
 
     let xi = Math.floor(camera.getExactX() / TERRAIN_TILESIZE), //these 4 are in units of tiles.
         xf = Math.ceil((camera.getExactX() + screenWidth / zoom) / TERRAIN_TILESIZE), //need to divide canvas width by ZOOM.
@@ -1087,9 +1367,12 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
                 continue;
             }
             tileID = terrain_mapArr[tx + ty * terrain_mapWidth];
+            sur_type = terrain_id2sur[tileID];
+
             scx = (tx * TERRAIN_TILESIZE - camera.getExactX()) * zoom;
             scy = (ty * TERRAIN_TILESIZE - camera.getExactY()) * zoom;
-            data = terrain_idData[tileID];
+            //data = terrain_idData[tileID];
+            //data = terrain_surface_data[tx + ty * terrain_mapWidth];
             //switch () {
             // case terrain_wall_type.SQUARE:
             //     ctx.beginPath();
@@ -1098,8 +1381,40 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             //     //ctx.fillRect(scx, scy, CELLSIZE * zoom, CELLSIZE * zoom);
             //     break;
             //case terrain_wall_type.TOP:
-            if (data & terrain_wall_type.DOWN) {
-                //may be inefficient as it draws lines individually but some may not be connected so...
+
+            if (sur_type === 16) {
+                ctx.beginPath();
+                ctx.moveTo(scx, scy + TERRAIN_TILESIZE * zoom);
+                ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy); //draw line 1 tilesize long
+                ctx.stroke();
+                continue;
+            }
+            if (sur_type === 17) {
+                ctx.beginPath();
+                ctx.moveTo(scx, scy);
+                ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy + TERRAIN_TILESIZE * zoom);
+                ctx.stroke();
+                continue;
+            }
+            if (sur_type === 18) {
+                ctx.beginPath();
+                ctx.moveTo(scx, scy + TERRAIN_TILESIZE * zoom);
+                ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy);
+                ctx.stroke();
+                continue;
+            }
+            if (sur_type === 19) {
+                ctx.beginPath();
+                ctx.moveTo(scx, scy);
+                ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy + TERRAIN_TILESIZE * zoom);
+                ctx.stroke();
+                continue;
+            }
+
+
+
+            if (sur_type & 4) {
+                //is inefficient as it draws lines individually but some may not be connected so...
                 ctx.beginPath();
                 ctx.moveTo(scx, scy + TERRAIN_TILESIZE * zoom);
                 ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy + TERRAIN_TILESIZE * zoom); //draw line 1 tilesize long
@@ -1107,7 +1422,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             }
             //break;
             //case terrain_wall_type.RIGHT:
-            if (data & terrain_wall_type.LEFT) {
+            if (sur_type & 8) {
                 ctx.beginPath();
                 ctx.moveTo(scx, scy);
                 ctx.lineTo(scx, scy + TERRAIN_TILESIZE * zoom);
@@ -1115,7 +1430,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             }
             // break;
             //case terrain_wall_type.BOTTOM:
-            if (data & terrain_wall_type.UP) {
+            if (sur_type & 1) {
                 ctx.beginPath();
                 ctx.moveTo(scx, scy);
                 ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy);
@@ -1123,7 +1438,7 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
             }
             //break;
             //case terrain_wall_type.LEFT:
-            if (data & terrain_wall_type.RIGHT) {
+            if (sur_type & 2) {
                 ctx.beginPath();
                 ctx.moveTo(scx + TERRAIN_TILESIZE * zoom, scy);
                 ctx.lineTo(scx + TERRAIN_TILESIZE * zoom, scy + TERRAIN_TILESIZE * zoom);
@@ -1158,7 +1473,8 @@ function drawDebug(ctx, camera, screenWidth, screenHeight) {
 
 export {
     create, remove, get,
-    initEntityGrid, updateAll, setTerrainMap, setGridCenterRef, terrain_wall_type, drawDebug, getCount,
+    setTerrainMap,
+    initEntityGrid, updateAll, setGridCenterRef, drawDebug, getCount,
     isPhysicsComponent,
     newCollisionCase
 };

@@ -38,7 +38,8 @@ let gti = {
 // function Line(x1, y1, x2, y2) {
 //     return {x1: x1, y1: y1, x2: x2, y2: y2}
 // }
-let type = Engine.PhysicsComponent.terrain_wall_type;
+//let type = Engine.PhysicsComponent.terrain_wall_type;
+
 
 //IMPORTANT: these IDs are 0-indexed on the tilemap, but Tiled exports (json) to be 1-indexed, so the exported data is actually all of these +1.
 let id_Data0 = {
@@ -59,15 +60,14 @@ let id_Data0 = {
 
 
     //Grass-water
-    11: type.DOWN,
-    26: type.RIGHT,
-    28: type.LEFT,
-    43: type.UP,
-    13: type.LEFT | type.UP,
-    14: type.RIGHT | type.UP,
-    29: type.LEFT | type.DOWN,
-    30: type.RIGHT | type.DOWN,
-    idk: ""
+    11: 4, //type.DOWN,
+    26: 2, //type.RIGHT,
+    28: 8, //type.LEFT,
+    43: 1, //type.UP,
+    13: 16, //type.LEFT | type.UP,
+    14: 17, //type.RIGHT | type.UP,
+    29: 19, //type.LEFT | type.DOWN,
+    30: 18//6, //type.RIGHT | type.DOWN,
 
 }
 
